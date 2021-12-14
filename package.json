@@ -1,0 +1,27 @@
+{
+  "name": "tic_smart_api",
+  "version": "1.0.0",
+  "description": "Api to send data to SMART tool of Articonf platform",
+  "main": "app.js",
+  "scripts": {
+    "test": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bityoga/tic_event_listener.git"
+  },
+  "keywords": [
+    "tic",
+    "smart",
+    "api"
+  ],
+  "author": "Anandhakumar Palanisamy",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bityoga/tic_event_listener/issues"
+  },
+  "homepage": "https://github.com/bityoga/tic_event_listener#readme",
+  "dependencies": {
+    "axios": "^0.24.0"
+  }
+}
