@@ -29,6 +29,7 @@ async function getHlfExplorerAuthenticationToken() {
     console.error("getHlfExplorerAuthenticationToken() Error :", error);
   }
   finally {
+
     return hlfExplorerAuthorisationToken;
   }
 }
@@ -257,6 +258,45 @@ async function getTransactionList(channelGenesisHash, number, txIdHash) {
 
 
 
+async function getBlocksAndTransactionList(channelGenesisHash, number) {
+
+  let blocksAndTransactionInfo = null;
+  try {
+    const authenticationToken = await getHlfExplorerAuthenticationToken();
+
+    //console.log(authenticationToken);
+    if (authenticationToken) {
+      const axiosRequest = {
+        method: 'get',
+        url: HYPERLEDGER_EXPLORER_ACCESS_URL + '/api/blockAndTxList/' + channelGenesisHash + '/' + number,
+        headers: {
+          'Authorization': 'Bearer ' + authenticationToken,
+        }
+      };
+
+
+      const response = await axios(axiosRequest);
+      //console.log(response.data);
+      blocksAndTransactionInfo = response.data.rows;
+      /* for (block of blocksAndTransactionInfo) {
+        console.log(block.blockhash);
+        console.log(block.createdt);
+        console.log(block.blksize);
+        console.log(block.txhash);
+      } */
+    } else {
+      console.log("authentication token retrieval failed");
+    }
+
+  } catch (error) {
+    console.error("getBlocksAndTransactionList() Error : ".error);
+  }
+  finally {
+    return blocksAndTransactionInfo;
+  }
+}
+
+
 
 async function fetchData() {
 
@@ -281,4 +321,50 @@ async function fetchData() {
   }
 }
 
+async function fetchDataCombined() {
+
+  const channelList = await getChannels();
+
+  if (channelList) {
+    for (const channel of channelList) {
+      //const chaincodeList = await getChainCodeList(channel.channel_genesis_hash);
+      const blockAndTransactionList = await getBlocksAndTransactionList(channel.channel_genesis_hash, 1626224882);
+      for (const block of blockAndTransactionList) {
+        //console.log(block.txhash);
+        const listofBlockTransactionIdHashes = block.txhash
+        for (transactionIdHash of listofBlockTransactionIdHashes) {
+          await getTransactionByTxIdHash(channel.channel_genesis_hash, transactionIdHash)
+          //await getTransactionList(channel.channel_genesis_hash, 65960697, transactionIdHash)
+        }
+      }
+
+    }
+  }
+  else {
+    console.log("No channels present")
+  }
+}
+
 fetchData();
+//fetchDataCombined();
+
+
+/* getHlfExplorerAuthenticationToken().then(function (token) {
+  const channelGenesisHash = "48f7c78d29ec2a9b04731702708fafbeaeec512c278ba7d479226dd9b9094464";
+  var config = {
+    method: 'get',
+    url: HYPERLEDGER_EXPLORER_ACCESS_URL + '/api/blockAndTxList/' + channelGenesisHash + '/65960697',
+    headers: {
+      'Authorization': 'Bearer ' + token,
+    }
+  };
+
+  axios(config)
+    .then(function (response) {
+      console.log(response.data);
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
+
+}); */
