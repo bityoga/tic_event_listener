@@ -100,14 +100,14 @@ async function getChannels() {
   }
 }
 
-getChannels()
+/* getChannels()
   .then(function (response) {
     //console.log(response);
     response.forEach(function (item, index) {
       //getChainCodeList(item.channel_genesis_hash)
       getBlockActivityList(item.channel_genesis_hash)
     });
-  });
+  }); */
 
 
 
@@ -127,7 +127,7 @@ async function getChainCodeList(channelGenesisHash) {
       };
 
       const response = await axios(axiosRequest);
-      console.log(response.data);
+      //console.log(response.data);
       chainCodeList = response.data.chaincode;
     } else {
       console.log("authentication token retrieval failed");
@@ -160,7 +160,7 @@ async function getBlockActivityList(channelGenesisHash) {
       };
 
       const response = await axios(axiosRequest);
-      console.log(response.data);
+      //console.log(response.data);
       blockActivityist = response.data.row;
     } else {
       console.log("authentication token retrieval failed");
@@ -173,3 +173,112 @@ async function getBlockActivityList(channelGenesisHash) {
     return blockActivityist;
   }
 }
+
+
+async function getTransactionByTxIdHash(channelGenesisHash, txIdHash) {
+
+  let transactionInfo = null;
+  try {
+    const authenticationToken = await getHlfExplorerAuthenticationToken();
+
+    //console.log(authenticationToken);
+    if (authenticationToken) {
+      const axiosRequest = {
+        method: 'get',
+        url: HYPERLEDGER_EXPLORER_ACCESS_URL + '/api/transaction/' + channelGenesisHash + '/' + txIdHash,
+        headers: {
+          'Authorization': 'Bearer ' + authenticationToken,
+        }
+      };
+
+
+      const response = await axios(axiosRequest);
+      //console.log(response.data);
+      transactionInfo = response.data.row;
+      console.log(transactionInfo.txhash);
+      console.log(transactionInfo.chaincodename);
+      console.log(transactionInfo.createdt);
+      //console.log(transactionInfo.write_set);
+      for (writes of transactionInfo.write_set) {
+        //console.log(writes)
+        if (writes["chaincode"] !== "lscc") {
+          console.log(writes["chaincode"], writes["set"]);
+        }
+      }
+    } else {
+      console.log("authentication token retrieval failed");
+    }
+
+  } catch (error) {
+    console.error("getBlockActivityList() Error : ".error);
+  }
+  finally {
+    return transactionInfo;
+  }
+}
+
+
+
+async function getTransactionList(channelGenesisHash, number, txIdHash) {
+
+  let transactionInfo = null;
+  try {
+    const authenticationToken = await getHlfExplorerAuthenticationToken();
+
+    //console.log(authenticationToken);
+    if (authenticationToken) {
+      const axiosRequest = {
+        method: 'get',
+        url: HYPERLEDGER_EXPLORER_ACCESS_URL + '/api/txList/' + channelGenesisHash + '/' + number + '/' + txIdHash,
+        headers: {
+          'Authorization': 'Bearer ' + authenticationToken,
+        }
+      };
+
+
+      const response = await axios(axiosRequest);
+      console.log(response.data);
+      /* transactionInfo = response.data.row;
+      console.log(transactionInfo.txhash);
+      console.log(transactionInfo.chaincodename);
+      console.log(transactionInfo.createdt);
+      console.log(transactionInfo.write_set); */
+    } else {
+      console.log("authentication token retrieval failed");
+    }
+
+  } catch (error) {
+    console.error("getBlockActivityList() Error : ".error);
+  }
+  finally {
+    return transactionInfo;
+  }
+}
+
+
+
+
+async function fetchData() {
+
+  const channelList = await getChannels();
+  if (channelList) {
+    for (const channel of channelList) {
+      //const chaincodeList = await getChainCodeList(channel.channel_genesis_hash);
+      const blockActivityList = await getBlockActivityList(channel.channel_genesis_hash);
+      for (const block of blockActivityList) {
+        //console.log(block.txhash);
+        const listofBlockTransactionIdHashes = block.txhash
+        for (transactionIdHash of listofBlockTransactionIdHashes) {
+          await getTransactionByTxIdHash(channel.channel_genesis_hash, transactionIdHash)
+          //await getTransactionList(channel.channel_genesis_hash, 65960697, transactionIdHash)
+        }
+      }
+
+    }
+  }
+  else {
+    console.log("No channels present")
+  }
+}
+
+fetchData();
