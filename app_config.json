@@ -1,0 +1,11 @@
+{
+    "tic_smart_api_app_port": 3004,
+    "tic_smart_api_app_admin_user_name": "admin",
+    "tic_smart_api_app_admin_user_password": "adminpw",
+    "tic_master_machine_ip_address":"LOCALHOST_OR_YOUR_MASTER_MACHINE_IP_ADDRESS",
+    "hyperledger_explorer_rest_api_authentication_user_name":"admin",
+    "hyperledger_explorer_rest_api_authentication_user_password":"adminpw",
+    "smart_rest_api_authentication_user_name":"admin",
+    "smart_rest_api_authentication_user_password":"adminpw",
+    ""
+}
