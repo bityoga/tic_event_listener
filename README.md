@@ -45,17 +45,17 @@ $ npm i # Run this to generate package-lock.json which will be required for crea
 Do step 3 as said above if running locally
 
 ```sh
-$ docker build --tag tic-smart-api-app .
+$ docker build --tag tic-smart-api .
 ```
 
 ### 2a) Run as a docker container
 
 ```sh
-$ docker run -d --name tic-smart-api-app -p 3004:3004 tic-smart-api-app:latest
+$ docker run -d --name tic-smart-api -p 3004:3004 tic-smart-api:latest
 ```
 
 ### 2b) Run as a docker service with replicas
 
 ```sh
-$ docker service create --name tic-smart-api-service --replicas 1 -p 3004:3004 tic-smart-api-app:latest
+$ docker service create --name tic-smart-api-service --replicas 1 -p 3004:3004 tic-smart-api:latest
 ```
