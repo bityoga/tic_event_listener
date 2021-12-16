@@ -543,14 +543,18 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
     if (writes["chaincode"] !== "lscc") {
       const writeSet = writes["set"];
       const chainCodeName = writes["chaincode"];
+      let useCaseName = chainCodeName;
+      let docType = chainCodeName;
       //console.log(writeSet);
       for (write of writeSet) {
         //console.log(write);
         if (write.value.length > 0) {
           write.value = JSON.parse(write.value);
+          if ("docType" in write.value) {
+            docType = write.value["docType"];
+          }
         }
-        let useCaseName = chainCodeName;
-        let docType = chainCodeName;
+
         let smarTApiSpecificData = {
           ApplicationType: useCaseName,
           docType: docType,
