@@ -539,6 +539,7 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
   transactionInfo
 ) {
   updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  //console.log(transactionInfo);
   for (writes of transactionInfo.write_set) {
     if (writes["chaincode"] !== "lscc") {
       const writeSet = writes["set"];
@@ -561,6 +562,7 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
         };
         let transactionIdInfo = {
           transactionId: transactionId,
+          createdt: transactionInfo.createdt,
           chainCodeName: chainCodeName,
         };
         let transactionInformation = {
