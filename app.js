@@ -306,12 +306,19 @@ async function getPushedTransactionListFromSmartApi(useCaseName) {
   }
 }
 
-async function getUseCaseListFromSmartApi() {
+async function getUseCaseListFromSmartApi(passedAuthenticationToken) {
   updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   let useCaseList = null;
   try {
     const smartAuthenticationToken = await getSmartApiAuthenticationToken();
+
     if (smartAuthenticationToken) {
+      let jwtToken;
+      if (passedAuthenticationToken) {
+        jwtToken = passedAuthenticationToken;
+      } else {
+        jwtToken = smartAuthenticationToken;
+      }
       var axiosRequest = {
         method: "get",
         // To bypass  "Error: self signed certificate in certificate chain"
@@ -322,9 +329,10 @@ async function getUseCaseListFromSmartApi() {
           appConfigJson["ARTICONF_SMART_API_USECASE_ACCESS_URL"] +
           "/api/use-cases",
         headers: {
-          Authorization: "Bearer " + smartAuthenticationToken,
+          Authorization: "Bearer " + jwtToken,
         },
       };
+      //console.log(axiosRequest);
       const response = await axios(axiosRequest);
       //console.log(response.data);
       useCaseList = response.data;
@@ -334,9 +342,14 @@ async function getUseCaseListFromSmartApi() {
   } catch (error) {
     console.error("getUseCaseListFromSmartApi() Error : ".error);
   } finally {
-    console.log(useCaseList);
+    //console.log(useCaseList);
     return useCaseList;
   }
+}
+function checkIfUseCaseExists(useCaseList, useCaseNameToCheck) {
+  return useCaseList.some(function (el) {
+    return el.name === useCaseNameToCheck;
+  });
 }
 
 async function createNewUseCaseInSmart(useCaseName) {
@@ -345,34 +358,52 @@ async function createNewUseCaseInSmart(useCaseName) {
   try {
     const smartAuthenticationToken = await getSmartApiAuthenticationToken();
     if (smartAuthenticationToken) {
-      var data = JSON.stringify({ name: useCaseName });
-      const staticToken =
-        "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InJlZ3VsYXJAaXRlYy5hYXUuYXQiLCJjcmVhdGVkX2F0IjoiMjAyMS0xMi0xNSAyMToyODo1Ny45MjE3ODgiLCJ2YWxpZF91bnRpbCI6IjIwMjEtMTItMTYgMjE6Mjg6NTcuOTIxNzg4In0.gp13LARYOduRFHSNk9dKl_9Vtehkg2CXQu_Wiez4ptc";
-      var config = {
-        method: "post",
-        url:
-          appConfigJson["ARTICONF_SMART_API_USECASE_ACCESS_URL"] +
-          "/api/use-cases?name=" +
-          useCaseName,
-        httpsAgent: new https.Agent({
-          rejectUnauthorized: false,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + staticToken,
-        },
-        data: data,
-      };
-      //console.log(config);
-      try {
-        const axiosResponse = await axios(config);
-        console.log(createNewUseCaseInSmartApiResponse);
-        createNewUseCaseInSmartApiResponse = axiosResponse.status;
-      } catch (error) {
-        //console.log(Object.keys(error), error.message);
-        console.log("axios error");
-        createNewUseCaseInSmartApiResponse = error.response.status;
-        console.log(error.response.status, error.response.data);
+      const existingUseCaseList = await getUseCaseListFromSmartApi(
+        smartAuthenticationToken
+      );
+      // console.log(existingUseCaseList);
+      const useCaseExists = checkIfUseCaseExists(
+        existingUseCaseList,
+        useCaseName
+      );
+      console.log("useCaseExists ", useCaseExists);
+      if (!useCaseExists) {
+        var data = JSON.stringify({ name: useCaseName });
+        const staticToken =
+          "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InJlZ3VsYXJAaXRlYy5hYXUuYXQiLCJjcmVhdGVkX2F0IjoiMjAyMS0xMi0xNSAyMToyODo1Ny45MjE3ODgiLCJ2YWxpZF91bnRpbCI6IjIwMjEtMTItMTYgMjE6Mjg6NTcuOTIxNzg4In0.gp13LARYOduRFHSNk9dKl_9Vtehkg2CXQu_Wiez4ptc";
+        var config = {
+          method: "post",
+          url:
+            appConfigJson["ARTICONF_SMART_API_USECASE_ACCESS_URL"] +
+            "/api/use-cases?name=" +
+            useCaseName,
+          httpsAgent: new https.Agent({
+            rejectUnauthorized: false,
+          }),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + smartAuthenticationToken,
+          },
+          data: data,
+        };
+        console.log(config);
+        try {
+          const axiosResponse = await axios(config);
+          console.log(createNewUseCaseInSmartApiResponse);
+          createNewUseCaseInSmartApiResponse = axiosResponse.status;
+        } catch (error) {
+          //console.log(Object.keys(error), error.message);
+          console.log("axios error");
+          createNewUseCaseInSmartApiResponse = error.response.status;
+          console.log(error.response.status, error.response.data);
+        }
+      } else {
+        console.log(
+          "Create New Use: Use case '" +
+            useCaseName +
+            "' already exists. So skipping ..."
+        );
+        createNewUseCaseInSmartApiResponse = 400;
       }
     } else {
       console.log("Smart Rest Api Authentication retrieval failed");
@@ -724,45 +755,6 @@ async function pushDataToSmart() {
     console.log("No network is present");
   }
 }
-
-//createNewUseCaseInSmart("ohrid3");
-//getUseCaseListFromSmartApi();
-//getPushedTransactionListFromSmartApi("car-sharing-official");
-
-//pushDataToSmart();
-//getPushedTransactionListFromSmartApi("ohrid3");
-
-/* const sample = {
-  "ApplicationType": 'ohrid3',
-  "docType": "ohrid3",
-  transactionId: '3ef41e3da3aa1c160f32df8e7ca2d2d52cdc0b2c115dccdcfe294578dafeb313',
-  chainCodeName: 'ohrid',
-  key: 'srk',
-  is_delete: false,
-  value: 1000
-}
-console.log(sample);
-sendTransactionDataToSmart(sample); */
-
-/* getChannels("hlfnet").then(function (respons) {
-  console.log(respons)
-}); */
-
-/* async function main() {
-  await pushDataToSmart();
-  setInterval(async () => {
-    await pushDataToSmart();
-  }, 5000);
-} */
-
-/* function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-async function summa() {
-  console.log('Taking a break...');
-  await sleep(7000);
-  console.log('seven seconds later, showing sleep in a loop...')
-} */
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
