@@ -3,6 +3,7 @@ const https = require("https");
 const fs = require("fs");
 const path = require("path");
 const { channel } = require("diagnostics_channel");
+const { type } = require("express/lib/response");
 
 const APP_CONFIG_FILE = "app_config.json";
 // Global variable to store the api config from file
@@ -551,8 +552,11 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
         //console.log(write);
         if (write.value.length > 0) {
           write.value = JSON.parse(write.value);
-          if ("docType" in write.value) {
-            docType = write.value["docType"];
+          console.log(typeof (write.value));
+          if (typeof (write.value) !== "number") {
+            if ("docType" in write.value) {
+              docType = write.value["docType"];
+            }
           }
         }
 
