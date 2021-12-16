@@ -28,28 +28,30 @@ function getLastPushedBlockNumberFromFile(networkName, channelName) {
       const channelList = network[networkName];
       for (networkChannel of channelList) {
         if (channelName in networkChannel) {
-          returnValue = networkChannel[channelName]["lastPushedBlockNumber"]
+          returnValue = networkChannel[channelName]["lastPushedBlockNumber"];
         }
       }
     }
   }
-  return returnValue
+  return returnValue;
 }
 
-function addNewNetworkChannelLastPushedDefaultBlockNumberZeroToFile(networkName, channelName) {
+function addNewNetworkChannelLastPushedDefaultBlockNumberZeroToFile(
+  networkName,
+  channelName
+) {
   let newNetworkInfo = {};
-  let newChannelInfo = {}
+  let newChannelInfo = {};
   newChannelInfo[channelName] = {
-    "lastPushedBlockNumber": 0
+    lastPushedBlockNumber: 0,
   };
   newNetworkInfo[networkName] = [newChannelInfo];
 
   const newLastPusheChannelInfoOnly = {
     channelName: {
-      "lastPushedBlockNumber": 0
-    }
+      lastPushedBlockNumber: 0,
+    },
   };
-
 
   let netWorkExists = false;
 
@@ -65,33 +67,41 @@ function addNewNetworkChannelLastPushedDefaultBlockNumberZeroToFile(networkName,
   }
 
   if (!netWorkExists) {
-
     appConfigJson["last_pushed_block_info"].push(newNetworkInfo);
-  }
-  else {
-
-    appConfigJson["last_pushed_block_info"][netWorkIndex][networkName].push(newChannelInfo);
+  } else {
+    appConfigJson["last_pushed_block_info"][netWorkIndex][networkName].push(
+      newChannelInfo
+    );
   }
 }
 updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
 
 function getLastPushedBlockNumber(networkName, channelName) {
-  let lasInsertedBlockNumber = getLastPushedBlockNumberFromFile(networkName, channelName);
+  let lasInsertedBlockNumber = getLastPushedBlockNumberFromFile(
+    networkName,
+    channelName
+  );
   if (lasInsertedBlockNumber === null) {
-    addNewNetworkChannelLastPushedDefaultBlockNumberZeroToFile(networkName, channelName);
+    addNewNetworkChannelLastPushedDefaultBlockNumberZeroToFile(
+      networkName,
+      channelName
+    );
 
     fs.writeFileSync(APP_CONFIG_FILE, JSON.stringify(appConfigJson, null, 2));
 
     //console.log(getLastPushedBlockNumberFromFile(networkName, channelName));
     return 0;
-  }
-  else {
+  } else {
     console.log(lasInsertedBlockNumber);
     return lasInsertedBlockNumber;
   }
 }
 
-function writeLastPushedBlockNumberToFile(lastPushedBlockNumber, networkName, channelName) {
+function writeLastPushedBlockNumberToFile(
+  lastPushedBlockNumber,
+  networkName,
+  channelName
+) {
   let returnValue = null;
   const networkList = appConfigJson["last_pushed_block_info"];
   let networkIndex;
@@ -107,9 +117,10 @@ function writeLastPushedBlockNumberToFile(lastPushedBlockNumber, networkName, ch
       }
     }
   }
-  appConfigJson["last_pushed_block_info"][networkIndex][networkName][channelIndex][channelName]["lastPushedBlockNumber"] = lastPushedBlockNumber;
+  appConfigJson["last_pushed_block_info"][networkIndex][networkName][
+    channelIndex
+  ][channelName]["lastPushedBlockNumber"] = lastPushedBlockNumber;
   fs.writeFileSync(APP_CONFIG_FILE, JSON.stringify(appConfigJson, null, 2));
-
 }
 /* console.log(appConfigJson); */
 /* setInterval(async () => {
@@ -128,16 +139,17 @@ const ARTICONF_SMART_API_USECASE_ACCESS_URL =
 const ARTICONF_SMART_API_BLOCKCHAIN_TRACE_RETRIEVAL_ACCESS_URL =
   "https://articonf1.itec.aau.at:30001";
 
-
-
-
 async function getHlfExplorerAuthenticationToken(networkName) {
   updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   let hlfExplorerAuthorisationToken = null;
   try {
     const authenticationCredentials = {
-      user: appConfigJson["hyperledger_explorer_rest_api_authentication_user_name"],
-      password: appConfigJson["hyperledger_explorer_rest_api_authentication_user_password"],
+      user:
+        appConfigJson["hyperledger_explorer_rest_api_authentication_user_name"],
+      password:
+        appConfigJson[
+          "hyperledger_explorer_rest_api_authentication_user_password"
+        ],
       network: networkName,
     };
 
@@ -176,7 +188,9 @@ async function getSmartApiAuthenticationToken() {
 
     const axiosRequest = {
       method: "post",
-      url: appConfigJson["ARTICONF_SMART_API_AUTHENTICATION_ACCESS_ACCESS_URL"] + "/api/tokens",
+      url:
+        appConfigJson["ARTICONF_SMART_API_AUTHENTICATION_ACCESS_ACCESS_URL"] +
+        "/api/tokens",
       // To bypass  "Error: self signed certificate in certificate chain"
       httpsAgent: new https.Agent({
         rejectUnauthorized: false,
@@ -214,7 +228,8 @@ async function sendTransactionDataToSmart(transactionData) {
     if (authenticationToken) {
       const axiosRequest = {
         method: "POST",
-        baseURL: appConfigJson["ARTICONF_SMART_API_AUTHENTICATION_ACCESS_ACCESS_URL"],
+        baseURL:
+          appConfigJson["ARTICONF_SMART_API_AUTHENTICATION_ACCESS_ACCESS_URL"],
         url: "/api/trace",
         //To bypass  "Error: self signed certificate in certificate chain"
         httpsAgent: new https.Agent({
@@ -232,10 +247,9 @@ async function sendTransactionDataToSmart(transactionData) {
         const response = await axios(axiosRequest);
         sendTransactionDataToSmartResponse = response.status;
       } catch (error) {
-        console.log("axios error")
+        console.log("axios error");
         sendTransactionDataToSmartResponse = error.response.status;
-        console.log(error.response.status, error.response.data)
-
+        console.log(error.response.status, error.response.data);
       }
     } else {
       console.log("smart api authentication token retrieval failed");
@@ -262,7 +276,9 @@ async function getPushedTransactionListFromSmartApi(useCaseName) {
           rejectUnauthorized: false,
         }),
         url:
-          appConfigJson["ARTICONF_SMART_API_BLOCKCHAIN_TRACE_RETRIEVAL_ACCESS_URL"] +
+          appConfigJson[
+            "ARTICONF_SMART_API_BLOCKCHAIN_TRACE_RETRIEVAL_ACCESS_URL"
+          ] +
           "/api/use_cases/" +
           useCaseName +
           "/transactions",
@@ -276,8 +292,8 @@ async function getPushedTransactionListFromSmartApi(useCaseName) {
         //console.log(response.data);
         transactionList = response.data;
       } catch (error) {
-        console.log("axios error")
-        console.log(error.response.status, error.response.data)
+        console.log("axios error");
+        console.log(error.response.status, error.response.data);
       }
     } else {
       console.log("Smart Rest Api Authentication retrieval failed");
@@ -302,7 +318,9 @@ async function getUseCaseListFromSmartApi() {
         httpsAgent: new https.Agent({
           rejectUnauthorized: false,
         }),
-        url: appConfigJson["ARTICONF_SMART_API_USECASE_ACCESS_URL"] + "/api/use-cases",
+        url:
+          appConfigJson["ARTICONF_SMART_API_USECASE_ACCESS_URL"] +
+          "/api/use-cases",
         headers: {
           Authorization: "Bearer " + smartAuthenticationToken,
         },
@@ -328,11 +346,13 @@ async function createNewUseCaseInSmart(useCaseName) {
     const smartAuthenticationToken = await getSmartApiAuthenticationToken();
     if (smartAuthenticationToken) {
       var data = JSON.stringify({ name: useCaseName });
-      const staticToken = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InJlZ3VsYXJAaXRlYy5hYXUuYXQiLCJjcmVhdGVkX2F0IjoiMjAyMS0xMi0xNSAyMToyODo1Ny45MjE3ODgiLCJ2YWxpZF91bnRpbCI6IjIwMjEtMTItMTYgMjE6Mjg6NTcuOTIxNzg4In0.gp13LARYOduRFHSNk9dKl_9Vtehkg2CXQu_Wiez4ptc";
+      const staticToken =
+        "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InJlZ3VsYXJAaXRlYy5hYXUuYXQiLCJjcmVhdGVkX2F0IjoiMjAyMS0xMi0xNSAyMToyODo1Ny45MjE3ODgiLCJ2YWxpZF91bnRpbCI6IjIwMjEtMTItMTYgMjE6Mjg6NTcuOTIxNzg4In0.gp13LARYOduRFHSNk9dKl_9Vtehkg2CXQu_Wiez4ptc";
       var config = {
         method: "post",
         url:
-          appConfigJson["ARTICONF_SMART_API_USECASE_ACCESS_URL"] + "/api/use-cases?name=" +
+          appConfigJson["ARTICONF_SMART_API_USECASE_ACCESS_URL"] +
+          "/api/use-cases?name=" +
           useCaseName,
         httpsAgent: new https.Agent({
           rejectUnauthorized: false,
@@ -347,15 +367,13 @@ async function createNewUseCaseInSmart(useCaseName) {
       try {
         const axiosResponse = await axios(config);
         console.log(createNewUseCaseInSmartApiResponse);
-        createNewUseCaseInSmartApiResponse =
-          axiosResponse.status;
+        createNewUseCaseInSmartApiResponse = axiosResponse.status;
       } catch (error) {
         //console.log(Object.keys(error), error.message);
-        console.log("axios error")
+        console.log("axios error");
         createNewUseCaseInSmartApiResponse = error.response.status;
-        console.log(error.response.status, error.response.data)
+        console.log(error.response.status, error.response.data);
       }
-
     } else {
       console.log("Smart Rest Api Authentication retrieval failed");
     }
@@ -454,7 +472,8 @@ async function getNetworkList() {
   try {
     const axiosRequest = {
       method: "get",
-      url: appConfigJson["HYPERLEDGER_EXPLORER_ACCESS_URL"] + "/auth/networklist",
+      url:
+        appConfigJson["HYPERLEDGER_EXPLORER_ACCESS_URL"] + "/auth/networklist",
       headers: {},
     };
     const response = await axios(axiosRequest);
@@ -478,7 +497,9 @@ async function getChannels(networkName) {
     if (authenticationToken) {
       const axiosRequest = {
         method: "get",
-        url: appConfigJson["HYPERLEDGER_EXPLORER_ACCESS_URL"] + "/api/channels/info",
+        url:
+          appConfigJson["HYPERLEDGER_EXPLORER_ACCESS_URL"] +
+          "/api/channels/info",
         headers: {
           Authorization: "Bearer " + authenticationToken,
         },
@@ -514,7 +535,9 @@ async function getChannelStatus(networkName, channelGenesisHash) {
         //   rejectUnauthorized: false,
         // }),
         url:
-          appConfigJson["HYPERLEDGER_EXPLORER_ACCESS_URL"] + "/api/status/" + channelGenesisHash,
+          appConfigJson["HYPERLEDGER_EXPLORER_ACCESS_URL"] +
+          "/api/status/" +
+          channelGenesisHash,
         headers: {
           Authorization: "Bearer " + authenticationToken,
         },
@@ -550,8 +573,8 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
         //console.log(write);
         if (write.value.length > 0) {
           write.value = JSON.parse(write.value);
-          console.log(typeof (write.value));
-          if (typeof (write.value) !== "number") {
+          console.log(typeof write.value);
+          if (typeof write.value !== "number") {
             if ("docType" in write.value) {
               docType = write.value["docType"];
             }
@@ -562,7 +585,7 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
           ApplicationType: useCaseName,
           docType: docType,
         };
-        let transactionIdInfo = {
+        /*let transactionIdInfo = {
           transactionId: transactionId,
           createdt: transactionInfo.createdt,
           chainCodeName: chainCodeName,
@@ -578,9 +601,9 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
         const sendTransactionDataToSmartResponse = await sendTransactionDataToSmart(
           transactionInformation
         );
-        console.log(createUseCaseResponse, sendTransactionDataToSmartResponse);
+        console.log(createUseCaseResponse, sendTransactionDataToSmartResponse);*/
 
-        /*let transactionWriteInformationValue = write.value;
+        let transactionWriteInformationValue = write.value;
         console.log(transactionWriteInformationValue.length);
         if (transactionWriteInformationValue.length > 0) {
           transactionWriteInformationValue = JSON.parse(
@@ -590,24 +613,27 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
           // empty string - so no need for JSON.parse;
         }
 
-        let useCaseName = chainCodeName;
-        let smarTApiSpecificData = {
-          ApplicationType: useCaseName,
-        };
+        // let useCaseName = chainCodeName;
+        // let smarTApiSpecificData = {
+        //   ApplicationType: useCaseName,
+        // };
         let transactionIdInfo = {
           transactionId: transactionId,
           chainCodeName: chainCodeName,
         };
         transactionWriteInformationValue = {
           ...smarTApiSpecificData,
-          ...transactionIdInfo,
+          //...transactionIdInfo,
           ...transactionWriteInformationValue,
         };
         console.log(transactionWriteInformationValue);
+        const createUseCaseResponse = await createNewUseCaseInSmart(
+          useCaseName
+        );
         const sendTransactionDataToSmartResponse = await sendTransactionDataToSmart(
           transactionWriteInformationValue
         );
-        console.log(sendTransactionDataToSmartResponse);*/
+        console.log(createUseCaseResponse, sendTransactionDataToSmartResponse);
       }
     }
   }
@@ -626,7 +652,10 @@ async function fetchAndSendBlockchainNetworkTransactionsToSmartApi(
       );
       console.log(channelStatus);
 
-      const lastPushedBlock = getLastPushedBlockNumber(networkName, channel.channelname);
+      const lastPushedBlock = getLastPushedBlockNumber(
+        networkName,
+        channel.channelname
+      );
 
       for (
         let blockNumber = lastPushedBlock;
@@ -659,7 +688,11 @@ async function fetchAndSendBlockchainNetworkTransactionsToSmartApi(
             console.log("no transactions");
           }
         }
-        writeLastPushedBlockNumberToFile(blockNumber + 1, networkName, channel.channelname)
+        writeLastPushedBlockNumberToFile(
+          blockNumber + 1,
+          networkName,
+          channel.channelname
+        );
       }
     }
   } else {
@@ -685,8 +718,6 @@ async function pushDataToSmart() {
 
 //pushDataToSmart();
 //getPushedTransactionListFromSmartApi("ohrid3");
-
-
 
 /* const sample = {
   "ApplicationType": 'ohrid3',
@@ -720,9 +751,8 @@ async function summa() {
   console.log('seven seconds later, showing sleep in a loop...')
 } */
 
-
 function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function main() {
