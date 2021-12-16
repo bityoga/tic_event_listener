@@ -1,11 +1,24 @@
 {
-    "tic_smart_api_app_port": 3004,
-    "tic_smart_api_app_admin_user_name": "admin",
-    "tic_smart_api_app_admin_user_password": "adminpw",
-    "tic_master_machine_ip_address":"LOCALHOST_OR_YOUR_MASTER_MACHINE_IP_ADDRESS",
-    "hyperledger_explorer_rest_api_authentication_user_name":"admin",
-    "hyperledger_explorer_rest_api_authentication_user_password":"adminpw",
-    "smart_rest_api_authentication_user_name":"admin",
-    "smart_rest_api_authentication_user_password":"adminpw",
-    ""
+  "tic_smart_api_app_port": 3004,
+  "tic_smart_api_app_admin_user_name": "admin",
+  "tic_smart_api_app_admin_user_password": "adminpw",
+  "HYPERLEDGER_EXPLORER_ACCESS_URL": "http://161.35.153.83:8090",
+  "hyperledger_explorer_rest_api_authentication_user_name": "admin",
+  "hyperledger_explorer_rest_api_authentication_user_password": "adminpw",
+  "ARTICONF_SMART_API_AUTHENTICATION_ACCESS_ACCESS_URL": "https://articonf1.itec.aau.at:30401",
+  "smart_rest_api_authentication_user_name": "regular@itec.aau.at",
+  "smart_rest_api_authentication_user_password": "2bViezK0Tst2LzsTIXix",
+  "ARTICONF_SMART_API_USECASE_ACCESS_URL": "https://articonf1.itec.aau.at:30420",
+  "ARTICONF_SMART_API_BLOCKCHAIN_TRACE_RETRIEVAL_ACCESS_URL": "https://articonf1.itec.aau.at:30001",
+  "last_pushed_block_info": [
+    {
+      "hlfnet": [
+        {
+          "appchannel": {
+            "lastPushedBlockNumber": 38
+          }
+        }
+      ]
+    }
+  ]
 }

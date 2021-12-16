@@ -1,5 +1,125 @@
 const axios = require("axios");
 const https = require("https");
+const fs = require("fs");
+const path = require("path");
+const { channel } = require("diagnostics_channel");
+
+const APP_CONFIG_FILE = "app_config.json";
+// Global variable to store the api config from file
+let appConfigJson;
+// Load api config from json file
+function updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile() {
+  try {
+    const apiConfigFilePath = path.resolve(__dirname, ".", APP_CONFIG_FILE);
+    //console.log(apiConfigFilePath);
+    const apiConfigFileContent = fs.readFileSync(apiConfigFilePath, "utf8");
+    appConfigJson = JSON.parse(apiConfigFileContent);
+    //console.log(appConfigJson);
+  } catch (e) {
+    console.log(e);
+    throw Error("API Start Error - Error while reading API config", e);
+  }
+}
+
+function getLastPushedBlockNumberFromFile(networkName, channelName) {
+  let returnValue = null;
+  const networkList = appConfigJson["last_pushed_block_info"];
+  for (network of networkList) {
+    if (networkName in network) {
+      const channelList = network[networkName];
+      for (networkChannel of channelList) {
+        if (channelName in networkChannel) {
+          returnValue = networkChannel[channelName]["lastPushedBlockNumber"]
+        }
+      }
+    }
+  }
+  return returnValue
+}
+
+function addNewNetworkChannelLastPushedDefaultBlockNumberZeroToFile(networkName, channelName) {
+  let newNetworkInfo = {};
+  let newChannelInfo = {}
+  newChannelInfo[channelName] = {
+    "lastPushedBlockNumber": 0
+  };
+  newNetworkInfo[networkName] = [newChannelInfo];
+
+  const newLastPusheChannelInfoOnly = {
+    channelName: {
+      "lastPushedBlockNumber": 0
+    }
+  };
+
+
+  let netWorkExists = false;
+
+  let netWorkIndex;
+
+  const networkList = appConfigJson["last_pushed_block_info"];
+
+  for (let i = 0; i < networkList.length; i++) {
+    if (networkName in networkList[i]) {
+      netWorkExists = true;
+      netWorkIndex = i;
+    }
+  }
+
+  if (!netWorkExists) {
+
+    appConfigJson["last_pushed_block_info"].push(newNetworkInfo);
+  }
+  else {
+
+    appConfigJson["last_pushed_block_info"][netWorkIndex][networkName].push(newChannelInfo);
+  }
+}
+updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+
+function getLastPushedBlockNumber(networkName, channelName) {
+  let lasInsertedBlockNumber = getLastPushedBlockNumberFromFile(networkName, channelName);
+  if (lasInsertedBlockNumber === null) {
+    addNewNetworkChannelLastPushedDefaultBlockNumberZeroToFile(networkName, channelName);
+
+    fs.writeFileSync(APP_CONFIG_FILE, JSON.stringify(appConfigJson, null, 2));
+
+    //console.log(getLastPushedBlockNumberFromFile(networkName, channelName));
+    return 0;
+  }
+  else {
+    console.log(lasInsertedBlockNumber);
+    return lasInsertedBlockNumber;
+  }
+}
+
+function writeLastPushedBlockNumberToFile(lastPushedBlockNumber, networkName, channelName) {
+  let returnValue = null;
+  const networkList = appConfigJson["last_pushed_block_info"];
+  let networkIndex;
+  let channelIndex;
+  for (let i = 0; i < networkList.length; i++) {
+    if (networkName in networkList[i]) {
+      networkIndex = i;
+      const channelList = networkList[i][networkName];
+      for (let j = 0; j < channelList.length; j++) {
+        if (channelName in channelList[j]) {
+          channelIndex = j;
+        }
+      }
+    }
+  }
+  appConfigJson["last_pushed_block_info"][networkIndex][networkName][channelIndex][channelName]["lastPushedBlockNumber"] = lastPushedBlockNumber;
+  fs.writeFileSync(APP_CONFIG_FILE, JSON.stringify(appConfigJson, null, 2));
+
+}
+/* console.log(appConfigJson); */
+/* setInterval(async () => {
+  //await fetch("https://www.google.com/")
+  updateAppConfigJsonGlobalVariableFromFile();
+  console.log("appConfigJson");
+  console.log(appConfigJson);
+}, 100);
+ */
 
 const HYPERLEDGER_EXPLORER_ACCESS_URL = "http://161.35.153.83:8090";
 const ARTICONF_SMART_API_AUTHENTICATION_ACCESS_ACCESS_URL =
@@ -9,18 +129,22 @@ const ARTICONF_SMART_API_USECASE_ACCESS_URL =
 const ARTICONF_SMART_API_BLOCKCHAIN_TRACE_RETRIEVAL_ACCESS_URL =
   "https://articonf1.itec.aau.at:30001";
 
+
+
+
 async function getHlfExplorerAuthenticationToken(networkName) {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   let hlfExplorerAuthorisationToken = null;
   try {
     const authenticationCredentials = {
-      user: "admin",
-      password: "adminpw",
+      user: appConfigJson["hyperledger_explorer_rest_api_authentication_user_name"],
+      password: appConfigJson["hyperledger_explorer_rest_api_authentication_user_password"],
       network: networkName,
     };
 
     const axiosRequest = {
       method: "post",
-      url: HYPERLEDGER_EXPLORER_ACCESS_URL + "/auth/login",
+      url: appConfigJson["HYPERLEDGER_EXPLORER_ACCESS_URL"] + "/auth/login",
       // To bypass  "Error: self signed certificate in certificate chain"
       httpsAgent: new https.Agent({
         rejectUnauthorized: false,
@@ -42,17 +166,18 @@ async function getHlfExplorerAuthenticationToken(networkName) {
 }
 
 async function getSmartApiAuthenticationToken() {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   //console.log("inside getSmartApiAuthenticationToken");
   let smartApiAuthorizationToken = null;
   try {
     const smartApiAuthenticationCredentials = {
-      username: "regular@itec.aau.at",
-      password: "2bViezK0Tst2LzsTIXix",
+      username: appConfigJson["smart_rest_api_authentication_user_name"],
+      password: appConfigJson["smart_rest_api_authentication_user_password"],
     };
 
     const axiosRequest = {
       method: "post",
-      url: ARTICONF_SMART_API_AUTHENTICATION_ACCESS_ACCESS_URL + "/api/tokens",
+      url: appConfigJson["ARTICONF_SMART_API_AUTHENTICATION_ACCESS_ACCESS_URL"] + "/api/tokens",
       // To bypass  "Error: self signed certificate in certificate chain"
       httpsAgent: new https.Agent({
         rejectUnauthorized: false,
@@ -79,6 +204,7 @@ async function getSmartApiAuthenticationToken() {
 }
 
 async function sendTransactionDataToSmart(transactionData) {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   // console.log("inside sendTransactionData", transactionData);
   let sendTransactionDataToSmartResponse = null;
   try {
@@ -89,7 +215,7 @@ async function sendTransactionDataToSmart(transactionData) {
     if (authenticationToken) {
       const axiosRequest = {
         method: "POST",
-        baseURL: ARTICONF_SMART_API_AUTHENTICATION_ACCESS_ACCESS_URL,
+        baseURL: appConfigJson["ARTICONF_SMART_API_AUTHENTICATION_ACCESS_ACCESS_URL"],
         url: "/api/trace",
         //To bypass  "Error: self signed certificate in certificate chain"
         httpsAgent: new https.Agent({
@@ -103,21 +229,29 @@ async function sendTransactionDataToSmart(transactionData) {
         data: transactionData,
       };
       //console.log(axiosRequest);
-      const response = await axios(axiosRequest);
-      console.log("send Transaction Data response");
-      console.log(response.data);
-      sendTransactionDataToSmartResponse = response.data;
+      try {
+        const response = await axios(axiosRequest);
+        sendTransactionDataToSmartResponse = response.status;
+      } catch (error) {
+        console.log("axios error")
+        sendTransactionDataToSmartResponse = error.response.status;
+        console.log(error.response.status, error.response.data)
+
+      }
     } else {
       console.log("smart api authentication token retrieval failed");
     }
   } catch (error) {
     console.error("sendTransactionDataToSmart() Error : ".error);
   } finally {
+    console.log("sendTransactionDataToSmartResponse");
+    console.log(sendTransactionDataToSmartResponse);
     return sendTransactionDataToSmartResponse;
   }
 }
 
 async function getPushedTransactionListFromSmartApi(useCaseName) {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   let transactionList = null;
   try {
     const smartAuthenticationToken = await getSmartApiAuthenticationToken();
@@ -129,7 +263,7 @@ async function getPushedTransactionListFromSmartApi(useCaseName) {
           rejectUnauthorized: false,
         }),
         url:
-          ARTICONF_SMART_API_BLOCKCHAIN_TRACE_RETRIEVAL_ACCESS_URL +
+          appConfigJson["ARTICONF_SMART_API_BLOCKCHAIN_TRACE_RETRIEVAL_ACCESS_URL"] +
           "/api/use_cases/" +
           useCaseName +
           "/transactions",
@@ -138,9 +272,14 @@ async function getPushedTransactionListFromSmartApi(useCaseName) {
         },
       };
       //console.log(axiosRequest);
-      const response = await axios(axiosRequest);
-      console.log(response.data);
-      transactionList = response.data;
+      try {
+        const response = await axios(axiosRequest);
+        //console.log(response.data);
+        transactionList = response.data;
+      } catch (error) {
+        console.log("axios error")
+        console.log(error.response.status, error.response.data)
+      }
     } else {
       console.log("Smart Rest Api Authentication retrieval failed");
     }
@@ -153,6 +292,7 @@ async function getPushedTransactionListFromSmartApi(useCaseName) {
 }
 
 async function getUseCaseListFromSmartApi() {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   let useCaseList = null;
   try {
     const smartAuthenticationToken = await getSmartApiAuthenticationToken();
@@ -163,7 +303,7 @@ async function getUseCaseListFromSmartApi() {
         httpsAgent: new https.Agent({
           rejectUnauthorized: false,
         }),
-        url: ARTICONF_SMART_API_USECASE_ACCESS_URL + "/api/use-cases",
+        url: appConfigJson["ARTICONF_SMART_API_USECASE_ACCESS_URL"] + "/api/use-cases",
         headers: {
           Authorization: "Bearer " + smartAuthenticationToken,
         },
@@ -183,52 +323,47 @@ async function getUseCaseListFromSmartApi() {
 }
 
 async function createNewUseCaseInSmart(useCaseName) {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   let createNewUseCaseInSmartApiResponse = null;
   try {
     const smartAuthenticationToken = await getSmartApiAuthenticationToken();
     if (smartAuthenticationToken) {
       var data = JSON.stringify({ name: useCaseName });
-
+      const staticToken = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InJlZ3VsYXJAaXRlYy5hYXUuYXQiLCJjcmVhdGVkX2F0IjoiMjAyMS0xMi0xNSAyMToyODo1Ny45MjE3ODgiLCJ2YWxpZF91bnRpbCI6IjIwMjEtMTItMTYgMjE6Mjg6NTcuOTIxNzg4In0.gp13LARYOduRFHSNk9dKl_9Vtehkg2CXQu_Wiez4ptc";
       var config = {
         method: "post",
         url:
-          "https://articonf1.itec.aau.at:30420/api/use-cases?name=" +
+          appConfigJson["ARTICONF_SMART_API_USECASE_ACCESS_URL"] + "/api/use-cases?name=" +
           useCaseName,
         httpsAgent: new https.Agent({
           rejectUnauthorized: false,
         }),
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer " + window.btoa(smartAuthenticationToken),
+          Authorization: "Bearer " + staticToken,
         },
         data: data,
       };
-      console.log(config);
-      // try {
-      //   createNewUseCaseInSmartApiResponse = await axios(config);
-      //   console.log(createNewUseCaseInSmartApiResponse);
-      //   createNewUseCaseInSmartApiResponse =
-      //     createNewUseCaseInSmartApiResponse.data;
-      // } catch (error) {
-      //   console.log(error);
-      // } finally {
-      //   console.log(createNewUseCaseInSmartApiResponse);
-      // }
-      axios(config)
-        .then(function (response) {
-          console.log(JSON.stringify(response.data));
-        })
-        .catch(function (error) {
-          console.log(error);
-        });
+      //console.log(config);
+      try {
+        const axiosResponse = await axios(config);
+        console.log(createNewUseCaseInSmartApiResponse);
+        createNewUseCaseInSmartApiResponse =
+          axiosResponse.status;
+      } catch (error) {
+        //console.log(Object.keys(error), error.message);
+        console.log("axios error")
+        createNewUseCaseInSmartApiResponse = error.response.status;
+        console.log(error.response.status, error.response.data)
+      }
 
-      //console.log(response);
     } else {
       console.log("Smart Rest Api Authentication retrieval failed");
     }
   } catch (error) {
     console.error("createNewUseCaseInSmart() Error : ".error);
   } finally {
+    console.log("createNewUseCaseInSmartApiResponse");
     console.log(createNewUseCaseInSmartApiResponse);
     return createNewUseCaseInSmartApiResponse;
   }
@@ -240,6 +375,7 @@ async function getTransactionByTxIdHash(
   txIdHash
 ) {
   let transactionInfo = null;
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   try {
     const authenticationToken = await getHlfExplorerAuthenticationToken(
       networkName
@@ -250,7 +386,7 @@ async function getTransactionByTxIdHash(
       const axiosRequest = {
         method: "get",
         url:
-          HYPERLEDGER_EXPLORER_ACCESS_URL +
+          appConfigJson["HYPERLEDGER_EXPLORER_ACCESS_URL"] +
           "/api/transaction/" +
           channelGenesisHash +
           "/" +
@@ -278,6 +414,7 @@ async function getBlockDetailsbyBlockNumber(
   channelGenesisHash,
   blockNumber
 ) {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   let blockDetails = null;
   try {
     const authenticationToken = await getHlfExplorerAuthenticationToken(
@@ -289,7 +426,7 @@ async function getBlockDetailsbyBlockNumber(
       const axiosRequest = {
         method: "get",
         url:
-          HYPERLEDGER_EXPLORER_ACCESS_URL +
+          appConfigJson["HYPERLEDGER_EXPLORER_ACCESS_URL"] +
           "/api/block/" +
           channelGenesisHash +
           "/" +
@@ -313,11 +450,12 @@ async function getBlockDetailsbyBlockNumber(
 }
 
 async function getNetworkList() {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   let networkList = null;
   try {
     const axiosRequest = {
       method: "get",
-      url: HYPERLEDGER_EXPLORER_ACCESS_URL + "/auth/networklist",
+      url: appConfigJson["HYPERLEDGER_EXPLORER_ACCESS_URL"] + "/auth/networklist",
       headers: {},
     };
     const response = await axios(axiosRequest);
@@ -331,6 +469,7 @@ async function getNetworkList() {
   }
 }
 async function getChannels(networkName) {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   let channelList = null;
   try {
     const authenticationToken = await getHlfExplorerAuthenticationToken(
@@ -340,7 +479,7 @@ async function getChannels(networkName) {
     if (authenticationToken) {
       const axiosRequest = {
         method: "get",
-        url: HYPERLEDGER_EXPLORER_ACCESS_URL + "/api/channels/info",
+        url: appConfigJson["HYPERLEDGER_EXPLORER_ACCESS_URL"] + "/api/channels/info",
         headers: {
           Authorization: "Bearer " + authenticationToken,
         },
@@ -359,6 +498,7 @@ async function getChannels(networkName) {
   }
 }
 async function getChannelStatus(networkName, channelGenesisHash) {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   //console.log(channelGenesisHash);
   let channelStatus = null;
   try {
@@ -375,7 +515,7 @@ async function getChannelStatus(networkName, channelGenesisHash) {
         //   rejectUnauthorized: false,
         // }),
         url:
-          HYPERLEDGER_EXPLORER_ACCESS_URL + "/api/status/" + channelGenesisHash,
+          appConfigJson["HYPERLEDGER_EXPLORER_ACCESS_URL"] + "/api/status/" + channelGenesisHash,
         headers: {
           Authorization: "Bearer " + authenticationToken,
         },
@@ -398,6 +538,7 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
   transactionId,
   transactionInfo
 ) {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   for (writes of transactionInfo.write_set) {
     if (writes["chaincode"] !== "lscc") {
       const writeSet = writes["set"];
@@ -409,8 +550,10 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
           write.value = JSON.parse(write.value);
         }
         let useCaseName = chainCodeName;
+        let docType = chainCodeName;
         let smarTApiSpecificData = {
           ApplicationType: useCaseName,
+          docType: docType,
         };
         let transactionIdInfo = {
           transactionId: transactionId,
@@ -422,10 +565,12 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
           ...write,
         };
         console.log(transactionInformation);
-        // const sendTransactionDataToSmartResponse = await sendTransactionDataToSmart(
-        //   transactionInformation
-        // );
-        // console.log(sendTransactionDataToSmartResponse);
+        const createUseCaseResponse = await createNewUseCaseInSmart(useCaseName);
+
+        const sendTransactionDataToSmartResponse = await sendTransactionDataToSmart(
+          transactionInformation
+        );
+        console.log(createUseCaseResponse, sendTransactionDataToSmartResponse);
 
         /*let transactionWriteInformationValue = write.value;
         console.log(transactionWriteInformationValue.length);
@@ -463,6 +608,7 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
 async function fetchAndSendBlockchainNetworkTransactionsToSmartApi(
   networkName
 ) {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   const channelList = await getChannels(networkName);
   if (channelList) {
     for (const channel of channelList) {
@@ -472,8 +618,10 @@ async function fetchAndSendBlockchainNetworkTransactionsToSmartApi(
       );
       console.log(channelStatus);
 
+      const lastPushedBlock = getLastPushedBlockNumber(networkName, channel.channelname);
+
       for (
-        let blockNumber = 0;
+        let blockNumber = lastPushedBlock;
         blockNumber < channelStatus.latestBlock;
         blockNumber++
       ) {
@@ -503,6 +651,7 @@ async function fetchAndSendBlockchainNetworkTransactionsToSmartApi(
             console.log("no transactions");
           }
         }
+        writeLastPushedBlockNumberToFile(blockNumber + 1, networkName, channel.channelname)
       }
     }
   } else {
@@ -511,6 +660,7 @@ async function fetchAndSendBlockchainNetworkTransactionsToSmartApi(
 }
 
 async function pushDataToSmart() {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   const networkList = await getNetworkList();
   if (networkList) {
     for (network of networkList) {
@@ -521,33 +671,58 @@ async function pushDataToSmart() {
   }
 }
 
-createNewUseCaseInSmart("ohrid");
+//createNewUseCaseInSmart("ohrid3");
 //getUseCaseListFromSmartApi();
 //getPushedTransactionListFromSmartApi("car-sharing-official");
 
-// pushDataToSmart();
+//pushDataToSmart();
+//getPushedTransactionListFromSmartApi("ohrid3");
 
-// var data = JSON.stringify({ name: "anand" });
 
-// var config = {
-//   method: "post",
-//   url: "https://articonf1.itec.aau.at:30420/api/use-cases?name=anand",
-//   httpsAgent: new https.Agent({
-//     rejectUnauthorized: false,
-//   }),
-//   headers: {
-//     "Content-Type": "application/json",
-//     Authorization:
-//       "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InJlZ3VsYXJAaXRlYy5hYXUuYXQiLCJjcmVhdGVkX2F0IjoiMjAyMS0xMi0xNSAyMToyODo1Ny45MjE3ODgiLCJ2YWxpZF91bnRpbCI6IjIwMjEtMTItMTYgMjE6Mjg6NTcuOTIxNzg4In0.gp13LARYOduRFHSNk9dKl_9Vtehkg2CXQu_Wiez4ptc",
-//   },
-//   data: data,
-// };
 
-// console.log(config);
-// axios(config)
-//   .then(function (response) {
-//     console.log(JSON.stringify(response.data));
-//   })
-//   .catch(function (error) {
-//     console.log(error);
-//   });
+/* const sample = {
+  "ApplicationType": 'ohrid3',
+  "docType": "ohrid3",
+  transactionId: '3ef41e3da3aa1c160f32df8e7ca2d2d52cdc0b2c115dccdcfe294578dafeb313',
+  chainCodeName: 'ohrid',
+  key: 'srk',
+  is_delete: false,
+  value: 1000
+}
+console.log(sample);
+sendTransactionDataToSmart(sample); */
+
+/* getChannels("hlfnet").then(function (respons) {
+  console.log(respons)
+}); */
+
+/* async function main() {
+  await pushDataToSmart();
+  setInterval(async () => {
+    await pushDataToSmart();
+  }, 5000);
+} */
+
+/* function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+async function summa() {
+  console.log('Taking a break...');
+  await sleep(7000);
+  console.log('seven seconds later, showing sleep in a loop...')
+} */
+
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function main() {
+  while (true) {
+    /* code to wait on goes here (sync or async) */
+    await pushDataToSmart();
+    await delay(5000);
+  }
+}
+
+main();
