@@ -2,8 +2,6 @@ const axios = require("axios");
 const https = require("https");
 const fs = require("fs");
 const path = require("path");
-const { channel } = require("diagnostics_channel");
-const { type } = require("express/lib/response");
 
 const APP_CONFIG_FILE = "app_config.json";
 // Global variable to store the api config from file
