@@ -2,7 +2,7 @@
   "tic_smart_api_app_port": 3004,
   "tic_smart_api_app_admin_user_name": "admin",
   "tic_smart_api_app_admin_user_password": "adminpw",
-  "HYPERLEDGER_EXPLORER_ACCESS_URL": "http://161.35.153.83:8090",
+  "HYPERLEDGER_EXPLORER_ACCESS_URL": "http://54.77.211.168:8090",
   "hyperledger_explorer_rest_api_authentication_user_name": "admin",
   "hyperledger_explorer_rest_api_authentication_user_password": "adminpw",
   "ARTICONF_SMART_API_AUTHENTICATION_ACCESS_ACCESS_URL": "https://articonf1.itec.aau.at:30401",
@@ -15,7 +15,7 @@
       "hlfnet": [
         {
           "appchannel": {
-            "lastPushedBlockNumber": 38
+            "lastPushedBlockNumber": 0
           }
         }
       ]
