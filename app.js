@@ -668,31 +668,44 @@ async function fetchAndSendBlockchainNetworkTransactionsToSmartApi(
           blockNumber
         );
         const transactions = blockDetails.transactions;
-
-        for (transaction of transactions) {
-          const transactionId = transaction.payload.header.channel_header.tx_id;
-          //console.log(transactionId);
-          if (transactionId) {
+        let sendDataToSmartResponseStatus = null;
+        try {
+          for (transaction of transactions) {
+            const transactionId =
+              transaction.payload.header.channel_header.tx_id;
             //console.log(transactionId);
-            const transactionInfo = await getTransactionByTxIdHash(
+            if (transactionId) {
+              //console.log(transactionId);
+              const transactionInfo = await getTransactionByTxIdHash(
+                networkName,
+                channel.channel_genesis_hash,
+                transactionId
+              );
+              //console.log(transactionInfo);
+              await parseTransactionInfoWritesAndSendToSmartApi(
+                transactionId,
+                transactionInfo
+              );
+            } else {
+              console.log("no transactions");
+            }
+          }
+          sendDataToSmartResponseStatus = "success";
+        } catch (error) {
+          sendDataToSmartResponseStatus = "failed";
+          console.log(error);
+        } finally {
+          if (
+            sendDataToSmartResponseStatus &&
+            sendDataToSmartResponseStatus === "success"
+          ) {
+            writeLastPushedBlockNumberToFile(
+              blockNumber + 1,
               networkName,
-              channel.channel_genesis_hash,
-              transactionId
+              channel.channelname
             );
-            //console.log(transactionInfo);
-            await parseTransactionInfoWritesAndSendToSmartApi(
-              transactionId,
-              transactionInfo
-            );
-          } else {
-            console.log("no transactions");
           }
         }
-        writeLastPushedBlockNumberToFile(
-          blockNumber + 1,
-          networkName,
-          channel.channelname
-        );
       }
     }
   } else {
