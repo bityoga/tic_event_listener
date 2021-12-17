@@ -19,7 +19,7 @@ function updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile() {
     throw Error("API Start Error - Error while reading API config", e);
   }
 }
-
+updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
 function getLastPushedBlockNumberFromFile(networkName, channelName) {
   let returnValue = null;
   const networkList = appConfigJson["last_pushed_block_info"];
@@ -74,7 +74,6 @@ function addNewNetworkChannelLastPushedDefaultBlockNumberZeroToFile(
     );
   }
 }
-updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
 
 function getLastPushedBlockNumber(networkName, channelName) {
   let lasInsertedBlockNumber = getLastPushedBlockNumberFromFile(
@@ -218,7 +217,7 @@ async function getSmartApiAuthenticationToken() {
 
 async function sendTransactionDataToSmart(transactionData) {
   updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
-  // console.log("inside sendTransactionData", transactionData);
+  console.log("inside sendTransactionData", transactionData);
   let sendTransactionDataToSmartResponse = null;
   try {
     const authenticationToken = await getSmartApiAuthenticationToken();
@@ -768,4 +767,44 @@ async function main() {
   }
 }
 
-main();
+//main();
+
+let transactionData = {
+  ApplicationType: "mother",
+  docType: "mother",
+  id: "+4755555555",
+  firstName: "Anandhakumar",
+  lastName: "Palanisamy",
+  email: "anandhakumarpalanisamy91@gmail.com",
+  phoneNumber: "+4755555555",
+  nin: "09069116879",
+  TransactionMessage: "Created a Mother Record for +4755555555",
+  TransactionUnixTimestamp: "1637693537",
+  TransactionIsoTimestamp: "2021-11-23T18:52:17.131Z",
+  AssetId: "+4755555555",
+};
+
+let table = {
+  mappings: {
+    AssetId: "AssetId",
+    TransactionIsoTimestamp: "TransactionIsoTimestamp",
+    TransactionMessage: "TransactionMessage",
+    TransactionUnixTimestamp: "TransactionUnixTimestamp",
+    UniqueID: "AssetId",
+    email: "email",
+    firstName: "firstName",
+    id: "id",
+    lastName: "lastName",
+    nin: "nin",
+    phoneNumber: "phoneNumber",
+  },
+  name: "mother",
+  use_case: "mother",
+};
+
+sendTransactionDataToSmart(transactionData).then(function (response) {
+  console.log("send transaction request response :", response);
+  getPushedTransactionListFromSmartApi("mother").then(function (response) {
+    console.log("getPushedTransactionResponse", response);
+  });
+});
