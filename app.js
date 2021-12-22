@@ -351,6 +351,146 @@ function checkIfUseCaseExists(useCaseList, useCaseNameToCheck) {
   });
 }
 
+async function getUseCaseTableListFromSmartApi(
+  passedAuthenticationToken,
+  useCaseName
+) {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  let useCaseTableList = null;
+  try {
+    const smartAuthenticationToken = await getSmartApiAuthenticationToken();
+
+    if (smartAuthenticationToken) {
+      let jwtToken;
+      if (passedAuthenticationToken) {
+        jwtToken = passedAuthenticationToken;
+      } else {
+        jwtToken = smartAuthenticationToken;
+      }
+      var axiosRequest = {
+        method: "get",
+        // To bypass  "Error: self signed certificate in certificate chain"
+        httpsAgent: new https.Agent({
+          rejectUnauthorized: false,
+        }),
+        url:
+          appConfigJson["ARTICONF_SMART_API_USECASE_ACCESS_URL"] +
+          "/api/use-cases/" +
+          useCaseName +
+          "/tables",
+        headers: {
+          Authorization: "Bearer " + jwtToken,
+        },
+      };
+      //console.log(axiosRequest);
+      const response = await axios(axiosRequest);
+      //console.log(response.data);
+      useCaseTableList = response.data;
+    } else {
+      console.log("Smart Rest Api Authentication retrieval failed");
+    }
+  } catch (error) {
+    console.error("getUseCaseTableListFromSmartApi() Error : ".error);
+  } finally {
+    //console.log(useCaseTableList);
+    return useCaseTableList;
+  }
+}
+function checkIfUseCaseTableExists(useCaseTableList, tableNameToCheck) {
+  return useCaseTableList.some(function (el) {
+    return el.name === tableNameToCheck;
+  });
+}
+
+async function createNewTableInUseCaseInSmart(
+  useCaseName,
+  tableName,
+  tableMappings
+) {
+  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  let createNewUseCaseTableInSmartApiResponse = null;
+  try {
+    const smartAuthenticationToken = await getSmartApiAuthenticationToken();
+    if (smartAuthenticationToken) {
+      const existingUseCaseTableList = await getUseCaseTableListFromSmartApi(
+        smartAuthenticationToken,
+        useCaseName
+      );
+      // console.log(existingUseCaseTableList);
+      const useCaseTableExists = checkIfUseCaseTableExists(
+        existingUseCaseTableList,
+        tableName
+      );
+      console.log("useCaseTableExists ", useCaseTableExists);
+      if (!useCaseTableExists) {
+        var data = JSON.stringify({
+          name: tableName,
+          use_case: useCaseName,
+          mappings: {
+            UniqueID: "AssetId",
+            id: "id",
+            firstName: "firstName",
+            lastName: "lastName",
+            email: "email",
+            phoneNumber: "phoneNumber",
+            nin: "nin",
+            TransactionMessage: "TransactionMessage",
+            TransactionUnixTimestamp: "TransactionUnixTimestamp",
+            TransactionIsoTimestamp: "TransactionIsoTimestamp",
+            AssetId: "AssetId",
+          },
+        });
+        const staticToken =
+          "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InJlZ3VsYXJAaXRlYy5hYXUuYXQiLCJjcmVhdGVkX2F0IjoiMjAyMS0xMi0xNSAyMToyODo1Ny45MjE3ODgiLCJ2YWxpZF91bnRpbCI6IjIwMjEtMTItMTYgMjE6Mjg6NTcuOTIxNzg4In0.gp13LARYOduRFHSNk9dKl_9Vtehkg2CXQu_Wiez4ptc";
+        var config = {
+          method: "post",
+          url:
+            appConfigJson["ARTICONF_SMART_API_USECASE_ACCESS_URL"] +
+            "/api/use-cases/" +
+            useCaseName +
+            "/tables",
+          httpsAgent: new https.Agent({
+            rejectUnauthorized: false,
+          }),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + smartAuthenticationToken,
+          },
+          data: data,
+        };
+        console.log(config);
+        try {
+          const axiosResponse = await axios(config);
+          console.log(createNewUseCaseTableInSmartApiResponse);
+          createNewUseCaseTableInSmartApiResponse = axiosResponse.status;
+        } catch (error) {
+          //console.log(Object.keys(error), error.message);
+          console.log("axios error");
+          createNewUseCaseTableInSmartApiResponse = error.response.status;
+          console.log(error.response.status, error.response.data);
+        }
+      } else {
+        console.log(
+          "Create New Use Case Table: Use case '" +
+            useCaseName +
+            "' Table '" +
+            tableName +
+            "' already exists. So skipping ..."
+        );
+        createNewUseCaseTableInSmartApiResponse = 400;
+      }
+    } else {
+      console.log("Smart Rest Api Authentication retrieval failed");
+    }
+  } catch (error) {
+    console.error("createNewTableInUseCaseInSmart() Error : ".error);
+  } finally {
+    console.log("createNewUseCaseTableInSmartApiResponse");
+    console.log(createNewUseCaseTableInSmartApiResponse);
+    return createNewUseCaseTableInSmartApiResponse;
+  }
+}
+
 async function createNewUseCaseInSmart(useCaseName) {
   updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
   let createNewUseCaseInSmartApiResponse = null;
@@ -603,7 +743,7 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
         //console.log(write);
         if (write.value.length > 0) {
           write.value = JSON.parse(write.value);
-          console.log(typeof write.value);
+          //console.log(typeof(write.value));
           if (typeof write.value !== "number") {
             if ("docType" in write.value) {
               docType = write.value["docType"];
@@ -634,13 +774,22 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
         console.log(createUseCaseResponse, sendTransactionDataToSmartResponse);*/
 
         let transactionWriteInformationValue = write.value;
-        console.log(transactionWriteInformationValue.length);
+        console.log(
+          "transactionWriteInformationValue.length transactionWriteInformationValue"
+        );
+        console.log(
+          transactionWriteInformationValue.length,
+          transactionWriteInformationValue
+        );
+
         if (transactionWriteInformationValue.length > 0) {
           transactionWriteInformationValue = JSON.parse(
             transactionWriteInformationValue
           );
+          console.log(typeof transactionWriteInformationValue);
         } else {
           // empty string - so no need for JSON.parse;
+          console.log(typeof transactionWriteInformationValue);
         }
 
         // let useCaseName = chainCodeName;
@@ -656,14 +805,14 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
           //...transactionIdInfo,
           ...transactionWriteInformationValue,
         };
-        console.log(transactionWriteInformationValue);
+        /*console.log(transactionWriteInformationValue);
         const createUseCaseResponse = await createNewUseCaseInSmart(
           useCaseName
         );
         const sendTransactionDataToSmartResponse = await sendTransactionDataToSmart(
           transactionWriteInformationValue
         );
-        console.log(createUseCaseResponse, sendTransactionDataToSmartResponse);
+        console.log(createUseCaseResponse, sendTransactionDataToSmartResponse);*/
       }
     }
   }
@@ -762,49 +911,60 @@ function delay(ms) {
 async function main() {
   while (true) {
     /* code to wait on goes here (sync or async) */
-    await pushDataToSmart();
-    await delay(5000);
+    try {
+      await pushDataToSmart();
+    } catch (e) {
+      console.log("Error in pushDataToSmart: ", e);
+    } finally {
+      await delay(5000);
+    }
   }
 }
 
-//main();
+main();
 
-let transactionData = {
-  ApplicationType: "mother",
-  docType: "mother",
-  id: "+4755555555",
-  firstName: "Anandhakumar",
-  lastName: "Palanisamy",
-  email: "anandhakumarpalanisamy91@gmail.com",
-  phoneNumber: "+4755555555",
-  nin: "09069116879",
-  TransactionMessage: "Created a Mother Record for +4755555555",
-  TransactionUnixTimestamp: "1637693537",
-  TransactionIsoTimestamp: "2021-11-23T18:52:17.131Z",
-  AssetId: "+4755555555",
-};
+// let transactionData = {
+//   ApplicationType: "mother",
+//   docType: "mother",
+//   id: "+4755555555",
+//   firstName: "Anandhakumar",
+//   lastName: "Palanisamy",
+//   email: "anandhakumarpalanisamy91@gmail.com",
+//   phoneNumber: "+4755555555",
+//   nin: "09069116879",
+//   TransactionMessage: "Created a Mother Record for +4755555555",
+//   TransactionUnixTimestamp: "1637693537",
+//   TransactionIsoTimestamp: "2021-11-23T18:52:17.131Z",
+//   AssetId: "+4755555555",
+// };
 
-let table = {
-  mappings: {
-    AssetId: "AssetId",
-    TransactionIsoTimestamp: "TransactionIsoTimestamp",
-    TransactionMessage: "TransactionMessage",
-    TransactionUnixTimestamp: "TransactionUnixTimestamp",
-    UniqueID: "AssetId",
-    email: "email",
-    firstName: "firstName",
-    id: "id",
-    lastName: "lastName",
-    nin: "nin",
-    phoneNumber: "phoneNumber",
-  },
-  name: "mother",
-  use_case: "mother",
-};
+// let table = {
+//   mappings: {
+//     AssetId: "AssetId",
+//     TransactionIsoTimestamp: "TransactionIsoTimestamp",
+//     TransactionMessage: "TransactionMessage",
+//     TransactionUnixTimestamp: "TransactionUnixTimestamp",
+//     UniqueID: "AssetId",
+//     email: "email",
+//     firstName: "firstName",
+//     id: "id",
+//     lastName: "lastName",
+//     nin: "nin",
+//     phoneNumber: "phoneNumber",
+//   },
+//   name: "mother",
+//   use_case: "mother",
+// };
 
-sendTransactionDataToSmart(transactionData).then(function (response) {
-  console.log("send transaction request response :", response);
-  getPushedTransactionListFromSmartApi("mother").then(function (response) {
-    console.log("getPushedTransactionResponse", response);
-  });
-});
+// sendTransactionDataToSmart(transactionData).then(function (response) {
+//   console.log("send transaction request response :", response);
+//   getPushedTransactionListFromSmartApi("mother").then(function (response) {
+//     console.log("getPushedTransactionResponse", response);
+//   });
+// });
+
+// createNewTableInUseCaseInSmart("mother", "mother3", "mother").then(function (
+//   response
+// ) {
+//   console.log("createNewTableInUseCaseInSmart response :", response);
+// });
