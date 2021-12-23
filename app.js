@@ -726,6 +726,10 @@ async function getChannelStatus(networkName, channelGenesisHash) {
   }
 }
 
+function getKeyByValue(object, value) {
+  return Object.keys(object).find((key) => object[key] === value);
+}
+
 async function parseTransactionInfoWritesAndSendToSmartApi(
   transactionId,
   transactionInfo
@@ -740,7 +744,14 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
       let docType = chainCodeName;
       //console.log(writeSet);
       for (write of writeSet) {
-        //console.log(write);
+        console.log(write);
+        const writeValueKeysArray = Object.keys(JSON.parse(write.value));
+        console.log("writeValueKeysArray = ", writeValueKeysArray);
+        const possibleUniqueKey = getKeyByValue(
+          JSON.parse(write.value),
+          write.key
+        );
+        console.log("possibleUniqueKey = ", possibleUniqueKey);
         if (write.value.length > 0) {
           write.value = JSON.parse(write.value);
           //console.log(typeof(write.value));
