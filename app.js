@@ -2,6 +2,7 @@ const axios = require("axios");
 const https = require("https");
 const fs = require("fs");
 const path = require("path");
+const { stringify } = require("querystring");
 
 const APP_CONFIG_FILE = "app_config.json";
 // Global variable to store the api config from file
@@ -456,7 +457,7 @@ async function createNewTableInUseCaseInSmart(
             "Content-Type": "application/json",
             Authorization: "Bearer " + smartAuthenticationToken,
           },
-          data: data,
+          data: tableMappings,
         };
         console.log(config);
         try {
@@ -811,19 +812,47 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
           transactionId: transactionId,
           chainCodeName: chainCodeName,
         };
+
+        console.log(transactionWriteInformationValue);
+        const createUseCaseResponse = await createNewUseCaseInSmart(
+          useCaseName
+        );
+        let tableMappings;
+        let transactionWriteInformationValueSchema = null;
+        if (
+          typeof transactionWriteInformationValue === "object" &&
+          transactionWriteInformationValue !== null
+        ) {
+          transactionWriteInformationValueSchema = {};
+          for (const key in transactionWriteInformationValue) {
+            transactionWriteInformationValueSchema[key] = String(key);
+          }
+        }
+
+        tableMappings = JSON.stringify({
+          name: docType,
+          use_case: useCaseName,
+          mappings: transactionWriteInformationValueSchema,
+        });
+        console.log("tableMappings", tableMappings);
+        const createTableInUseCaseResponse = await createNewTableInUseCaseInSmart(
+          useCaseName,
+          docType,
+          tableMappings
+        );
         transactionWriteInformationValue = {
           ...smarTApiSpecificData,
           //...transactionIdInfo,
           ...transactionWriteInformationValue,
         };
-        /*console.log(transactionWriteInformationValue);
-        const createUseCaseResponse = await createNewUseCaseInSmart(
-          useCaseName
-        );
         const sendTransactionDataToSmartResponse = await sendTransactionDataToSmart(
           transactionWriteInformationValue
         );
-        console.log(createUseCaseResponse, sendTransactionDataToSmartResponse);*/
+        console.log(
+          createUseCaseResponse,
+          createTableInUseCaseResponse,
+          sendTransactionDataToSmartResponse
+        );
       }
     }
   }
