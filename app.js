@@ -5,10 +5,12 @@ const path = require("path");
 const { stringify } = require("querystring");
 
 const APP_CONFIG_FILE = "app_config.json";
+const USECASE_CHAINCODE_CONFIG_FILE = "useCaseChainCodeConfig.json";
 // Global variable to store the api config from file
 let appConfigJson;
+let useCaseChainCodeConfigJson;
 // Load api config from json file
-function updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile() {
+function updateAppConfigJsonGlobalVariableWithLatestChangesFromFile() {
   try {
     const apiConfigFilePath = path.resolve(__dirname, ".", APP_CONFIG_FILE);
     //console.log(apiConfigFilePath);
@@ -20,7 +22,31 @@ function updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile() {
     throw Error("API Start Error - Error while reading API config", e);
   }
 }
-updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+// Load api config from json file
+function updateUseCaseChainCodeConfigJsonGlobalVariableWithLatestChangesFromFile() {
+  try {
+    const useCaseChainCodeConfigFilePath = path.resolve(
+      __dirname,
+      ".",
+      USECASE_CHAINCODE_CONFIG_FILE
+    );
+    //console.log(apiConfigFilePath);
+    const useCaseChainCodeConfigFileContent = fs.readFileSync(
+      useCaseChainCodeConfigFilePath,
+      "utf8"
+    );
+    useCaseChainCodeConfigJson = JSON.parse(useCaseChainCodeConfigFileContent);
+    console.log(typeof useCaseChainCodeConfigJson);
+  } catch (e) {
+    console.log(e);
+    throw Error(
+      "API Start Error - Error while reading useCaseChainCodeConfigJson file",
+      e
+    );
+  }
+}
+updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
+updateUseCaseChainCodeConfigJsonGlobalVariableWithLatestChangesFromFile();
 function getLastPushedBlockNumberFromFile(networkName, channelName) {
   let returnValue = null;
   const networkList = appConfigJson["last_pushed_block_info"];
@@ -140,7 +166,7 @@ const ARTICONF_SMART_API_BLOCKCHAIN_TRACE_RETRIEVAL_ACCESS_URL =
   "https://articonf1.itec.aau.at:30001";
 
 async function getHlfExplorerAuthenticationToken(networkName) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let hlfExplorerAuthorisationToken = null;
   try {
     const authenticationCredentials = {
@@ -177,7 +203,7 @@ async function getHlfExplorerAuthenticationToken(networkName) {
 }
 
 async function getSmartApiAuthenticationToken() {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   //console.log("inside getSmartApiAuthenticationToken");
   let smartApiAuthorizationToken = null;
   try {
@@ -217,7 +243,7 @@ async function getSmartApiAuthenticationToken() {
 }
 
 async function sendTransactionDataToSmart(transactionData) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   console.log("inside sendTransactionData", transactionData);
   let sendTransactionDataToSmartResponse = null;
   try {
@@ -264,7 +290,7 @@ async function sendTransactionDataToSmart(transactionData) {
 }
 
 async function getPushedTransactionListFromSmartApi(useCaseName) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let transactionList = null;
   try {
     const smartAuthenticationToken = await getSmartApiAuthenticationToken();
@@ -307,7 +333,7 @@ async function getPushedTransactionListFromSmartApi(useCaseName) {
 }
 
 async function getUseCaseListFromSmartApi(passedAuthenticationToken) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let useCaseList = null;
   try {
     const smartAuthenticationToken = await getSmartApiAuthenticationToken();
@@ -356,7 +382,7 @@ async function getUseCaseTableListFromSmartApi(
   passedAuthenticationToken,
   useCaseName
 ) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let useCaseTableList = null;
   try {
     const smartAuthenticationToken = await getSmartApiAuthenticationToken();
@@ -408,7 +434,7 @@ async function createNewTableInUseCaseInSmart(
   tableName,
   tableMappings
 ) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let createNewUseCaseTableInSmartApiResponse = null;
   try {
     const smartAuthenticationToken = await getSmartApiAuthenticationToken();
@@ -493,7 +519,7 @@ async function createNewTableInUseCaseInSmart(
 }
 
 async function createNewUseCaseInSmart(useCaseName) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let createNewUseCaseInSmartApiResponse = null;
   try {
     const smartAuthenticationToken = await getSmartApiAuthenticationToken();
@@ -563,7 +589,7 @@ async function getTransactionByTxIdHash(
   txIdHash
 ) {
   let transactionInfo = null;
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   try {
     const authenticationToken = await getHlfExplorerAuthenticationToken(
       networkName
@@ -602,7 +628,7 @@ async function getBlockDetailsbyBlockNumber(
   channelGenesisHash,
   blockNumber
 ) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let blockDetails = null;
   try {
     const authenticationToken = await getHlfExplorerAuthenticationToken(
@@ -638,7 +664,7 @@ async function getBlockDetailsbyBlockNumber(
 }
 
 async function getNetworkList() {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let networkList = null;
   try {
     const axiosRequest = {
@@ -658,7 +684,7 @@ async function getNetworkList() {
   }
 }
 async function getChannels(networkName) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let channelList = null;
   try {
     const authenticationToken = await getHlfExplorerAuthenticationToken(
@@ -689,7 +715,7 @@ async function getChannels(networkName) {
   }
 }
 async function getChannelStatus(networkName, channelGenesisHash) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   //console.log(channelGenesisHash);
   let channelStatus = null;
   try {
@@ -735,7 +761,8 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
   transactionId,
   transactionInfo
 ) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
+  updateUseCaseChainCodeConfigJsonGlobalVariableWithLatestChangesFromFile();
   //console.log(transactionInfo);
   for (writes of transactionInfo.write_set) {
     if (writes["chaincode"] !== "lscc") {
@@ -829,16 +856,30 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
           }
         }
 
-        tableMappings = JSON.stringify({
+        tableMappings = {
           name: docType,
           use_case: useCaseName,
           mappings: transactionWriteInformationValueSchema,
-        });
+        };
+
         console.log("tableMappings", tableMappings);
+        if (useCaseChainCodeConfigJson == null) {
+          useCaseChainCodeConfigJson = {};
+          useCaseChainCodeConfigJson[chainCodeName] = {};
+          useCaseChainCodeConfigJson[chainCodeName][docType] = tableMappings;
+        } else {
+          useCaseChainCodeConfigJson[chainCodeName] = {};
+          useCaseChainCodeConfigJson[chainCodeName][docType] = tableMappings;
+        }
+
+        fs.writeFileSync(
+          USECASE_CHAINCODE_CONFIG_FILE,
+          JSON.stringify(useCaseChainCodeConfigJson, null, 2)
+        );
         const createTableInUseCaseResponse = await createNewTableInUseCaseInSmart(
           useCaseName,
           docType,
-          tableMappings
+          JSON.stringify(tableMappings)
         );
         transactionWriteInformationValue = {
           ...smarTApiSpecificData,
@@ -861,7 +902,7 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
 async function fetchAndSendBlockchainNetworkTransactionsToSmartApi(
   networkName
 ) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   const channelList = await getChannels(networkName);
   if (channelList) {
     for (const channel of channelList) {
@@ -933,7 +974,7 @@ async function fetchAndSendBlockchainNetworkTransactionsToSmartApi(
 }
 
 async function pushDataToSmart() {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   const networkList = await getNetworkList();
   if (networkList) {
     for (network of networkList) {
