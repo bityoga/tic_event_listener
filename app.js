@@ -36,7 +36,8 @@ function updateMapConfigJsonGlobalVariableWithLatestChangesFromFile() {
     //console.log(mapConfigFilePath);
     const mapConfigFileContent = fs.readFileSync(mapConfigFilePath, "utf8");
     mapConfigJson = JSON.parse(mapConfigFileContent);
-    //console.log(mapConfigJson);
+    console.log("mapConfigJson");
+    console.log(mapConfigJson);
   } catch (e) {
     console.log(e);
     throw Error("API Start Error - Error while reading Map config", e);
