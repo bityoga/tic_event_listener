@@ -6,9 +6,12 @@ const { stringify } = require("querystring");
 
 const APP_CONFIG_FILE = "app_config.json";
 const USECASE_CHAINCODE_CONFIG_FILE = "useCaseChainCodeConfig.json";
+const MAPPED_CHAINCODE_USE_CASE_FILE =
+  "./tic_dashboard/mapUsecaseChaincode.json";
 // Global variable to store the api config from file
 let appConfigJson;
 let useCaseChainCodeConfigJson;
+let mapConfigJson;
 // Load api config from json file
 function updateAppConfigJsonGlobalVariableWithLatestChangesFromFile() {
   try {
@@ -20,6 +23,26 @@ function updateAppConfigJsonGlobalVariableWithLatestChangesFromFile() {
   } catch (e) {
     console.log(e);
     throw Error("API Start Error - Error while reading API config", e);
+  }
+}
+// Load api config from json file
+function updateMapConfigJsonGlobalVariableWithLatestChangesFromFile() {
+  try {
+    const mapConfigFilePath = path.resolve(
+      __dirname,
+      ".",
+      MAPPED_CHAINCODE_USE_CASE_FILE
+    );
+    //console.log(mapConfigFilePath);
+    const MAPPED_CHAINCODE_USE_CASE_FILE = fs.readFileSync(
+      mapConfigFilePath,
+      "utf8"
+    );
+    mapConfigJson = JSON.parse(MAPPED_CHAINCODE_USE_CASE_FILE);
+    //console.log(mapConfigJson);
+  } catch (e) {
+    console.log(e);
+    throw Error("API Start Error - Error while reading Map config", e);
   }
 }
 // Load api config from json file
@@ -841,9 +864,15 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
         };
 
         console.log(transactionWriteInformationValue);
-        const createUseCaseResponse = await createNewUseCaseInSmart(
-          useCaseName
-        );
+        let createUseCaseResponse;
+        updateMapConfigJsonGlobalVariableWithLatestChangesFromFile();
+        if (useCaseName in mapConfigJson) {
+          createUseCaseResponse = await createNewUseCaseInSmart(
+            mapConfigJson[useCaseName]
+          );
+        } else {
+          createUseCaseResponse = await createNewUseCaseInSmart(useCaseName);
+        }
         let tableMappings;
         let transactionWriteInformationValueSchema = null;
         if (
@@ -975,6 +1004,7 @@ async function fetchAndSendBlockchainNetworkTransactionsToSmartApi(
 
 async function pushDataToSmart() {
   updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
+  updateMapConfigJsonGlobalVariableWithLatestChangesFromFile();
   const networkList = await getNetworkList();
   if (networkList) {
     for (network of networkList) {
