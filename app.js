@@ -7,7 +7,7 @@ const { stringify } = require("querystring");
 const APP_CONFIG_FILE = "app_config.json";
 const USECASE_CHAINCODE_CONFIG_FILE = "useCaseChainCodeConfig.json";
 const MAPPED_CHAINCODE_USE_CASE_FILE =
-  "./tic_dashboard/mapUsecaseChaincode.json";
+  "./hlft-store/tic_dashboard/mapUsecaseChaincode.json";
 // Global variable to store the api config from file
 let appConfigJson;
 let useCaseChainCodeConfigJson;
@@ -34,11 +34,8 @@ function updateMapConfigJsonGlobalVariableWithLatestChangesFromFile() {
       MAPPED_CHAINCODE_USE_CASE_FILE
     );
     //console.log(mapConfigFilePath);
-    const MAPPED_CHAINCODE_USE_CASE_FILE = fs.readFileSync(
-      mapConfigFilePath,
-      "utf8"
-    );
-    mapConfigJson = JSON.parse(MAPPED_CHAINCODE_USE_CASE_FILE);
+    const mapConfigFileContent = fs.readFileSync(mapConfigFilePath, "utf8");
+    mapConfigJson = JSON.parse(mapConfigFileContent);
     //console.log(mapConfigJson);
   } catch (e) {
     console.log(e);
