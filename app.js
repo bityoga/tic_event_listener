@@ -862,15 +862,14 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
         };
 
         console.log(transactionWriteInformationValue);
-        let createUseCaseResponse;
+
         updateMapConfigJsonGlobalVariableWithLatestChangesFromFile();
         if (useCaseName in mapConfigJson) {
-          createUseCaseResponse = await createNewUseCaseInSmart(
-            mapConfigJson[useCaseName]
-          );
-        } else {
-          createUseCaseResponse = await createNewUseCaseInSmart(useCaseName);
+          useCaseName = mapConfigJson[useCaseName];
         }
+        const createUseCaseResponse = await createNewUseCaseInSmart(
+          useCaseName
+        );
         let tableMappings;
         let transactionWriteInformationValueSchema = null;
         if (
