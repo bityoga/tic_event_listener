@@ -811,10 +811,6 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
           }
         }
 
-        let smarTApiSpecificData = {
-          ApplicationType: useCaseName,
-          docType: docType,
-        };
         /*let transactionIdInfo = {
           transactionId: transactionId,
           createdt: transactionInfo.createdt,
@@ -907,6 +903,10 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
           docType,
           JSON.stringify(tableMappings)
         );
+        let smarTApiSpecificData = {
+          ApplicationType: useCaseName,
+          docType: docType,
+        };
         transactionWriteInformationValue = {
           ...smarTApiSpecificData,
           //...transactionIdInfo,
