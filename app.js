@@ -2,12 +2,18 @@ const axios = require("axios");
 const https = require("https");
 const fs = require("fs");
 const path = require("path");
+const { stringify } = require("querystring");
 
 const APP_CONFIG_FILE = "app_config.json";
+const USECASE_CHAINCODE_CONFIG_FILE = "useCaseChainCodeConfig.json";
+const MAPPED_CHAINCODE_USE_CASE_FILE =
+  "./hlft-store/tic_dashboard/mapUsecaseChaincode.json";
 // Global variable to store the api config from file
 let appConfigJson;
+let useCaseChainCodeConfigJson;
+let mapConfigJson;
 // Load api config from json file
-function updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile() {
+function updateAppConfigJsonGlobalVariableWithLatestChangesFromFile() {
   try {
     const apiConfigFilePath = path.resolve(__dirname, ".", APP_CONFIG_FILE);
     //console.log(apiConfigFilePath);
@@ -19,7 +25,49 @@ function updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile() {
     throw Error("API Start Error - Error while reading API config", e);
   }
 }
-
+// Load api config from json file
+function updateMapConfigJsonGlobalVariableWithLatestChangesFromFile() {
+  try {
+    const mapConfigFilePath = path.resolve(
+      __dirname,
+      ".",
+      MAPPED_CHAINCODE_USE_CASE_FILE
+    );
+    //console.log(mapConfigFilePath);
+    const mapConfigFileContent = fs.readFileSync(mapConfigFilePath, "utf8");
+    mapConfigJson = JSON.parse(mapConfigFileContent);
+    console.log("mapConfigJson");
+    console.log(mapConfigJson);
+  } catch (e) {
+    console.log(e);
+    throw Error("API Start Error - Error while reading Map config", e);
+  }
+}
+// Load api config from json file
+function updateUseCaseChainCodeConfigJsonGlobalVariableWithLatestChangesFromFile() {
+  try {
+    const useCaseChainCodeConfigFilePath = path.resolve(
+      __dirname,
+      ".",
+      USECASE_CHAINCODE_CONFIG_FILE
+    );
+    //console.log(apiConfigFilePath);
+    const useCaseChainCodeConfigFileContent = fs.readFileSync(
+      useCaseChainCodeConfigFilePath,
+      "utf8"
+    );
+    useCaseChainCodeConfigJson = JSON.parse(useCaseChainCodeConfigFileContent);
+    console.log(typeof useCaseChainCodeConfigJson);
+  } catch (e) {
+    console.log(e);
+    throw Error(
+      "API Start Error - Error while reading useCaseChainCodeConfigJson file",
+      e
+    );
+  }
+}
+updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
+updateUseCaseChainCodeConfigJsonGlobalVariableWithLatestChangesFromFile();
 function getLastPushedBlockNumberFromFile(networkName, channelName) {
   let returnValue = null;
   const networkList = appConfigJson["last_pushed_block_info"];
@@ -74,7 +122,6 @@ function addNewNetworkChannelLastPushedDefaultBlockNumberZeroToFile(
     );
   }
 }
-updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
 
 function getLastPushedBlockNumber(networkName, channelName) {
   let lasInsertedBlockNumber = getLastPushedBlockNumberFromFile(
@@ -140,7 +187,7 @@ const ARTICONF_SMART_API_BLOCKCHAIN_TRACE_RETRIEVAL_ACCESS_URL =
   "https://articonf1.itec.aau.at:30001";
 
 async function getHlfExplorerAuthenticationToken(networkName) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let hlfExplorerAuthorisationToken = null;
   try {
     const authenticationCredentials = {
@@ -177,7 +224,7 @@ async function getHlfExplorerAuthenticationToken(networkName) {
 }
 
 async function getSmartApiAuthenticationToken() {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   //console.log("inside getSmartApiAuthenticationToken");
   let smartApiAuthorizationToken = null;
   try {
@@ -217,8 +264,8 @@ async function getSmartApiAuthenticationToken() {
 }
 
 async function sendTransactionDataToSmart(transactionData) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
-  // console.log("inside sendTransactionData", transactionData);
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
+  console.log("inside sendTransactionData", transactionData);
   let sendTransactionDataToSmartResponse = null;
   try {
     const authenticationToken = await getSmartApiAuthenticationToken();
@@ -264,7 +311,7 @@ async function sendTransactionDataToSmart(transactionData) {
 }
 
 async function getPushedTransactionListFromSmartApi(useCaseName) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let transactionList = null;
   try {
     const smartAuthenticationToken = await getSmartApiAuthenticationToken();
@@ -307,7 +354,7 @@ async function getPushedTransactionListFromSmartApi(useCaseName) {
 }
 
 async function getUseCaseListFromSmartApi(passedAuthenticationToken) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let useCaseList = null;
   try {
     const smartAuthenticationToken = await getSmartApiAuthenticationToken();
@@ -352,8 +399,148 @@ function checkIfUseCaseExists(useCaseList, useCaseNameToCheck) {
   });
 }
 
+async function getUseCaseTableListFromSmartApi(
+  passedAuthenticationToken,
+  useCaseName
+) {
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
+  let useCaseTableList = null;
+  try {
+    const smartAuthenticationToken = await getSmartApiAuthenticationToken();
+
+    if (smartAuthenticationToken) {
+      let jwtToken;
+      if (passedAuthenticationToken) {
+        jwtToken = passedAuthenticationToken;
+      } else {
+        jwtToken = smartAuthenticationToken;
+      }
+      var axiosRequest = {
+        method: "get",
+        // To bypass  "Error: self signed certificate in certificate chain"
+        httpsAgent: new https.Agent({
+          rejectUnauthorized: false,
+        }),
+        url:
+          appConfigJson["ARTICONF_SMART_API_USECASE_ACCESS_URL"] +
+          "/api/use-cases/" +
+          useCaseName +
+          "/tables",
+        headers: {
+          Authorization: "Bearer " + jwtToken,
+        },
+      };
+      //console.log(axiosRequest);
+      const response = await axios(axiosRequest);
+      //console.log(response.data);
+      useCaseTableList = response.data;
+    } else {
+      console.log("Smart Rest Api Authentication retrieval failed");
+    }
+  } catch (error) {
+    console.error("getUseCaseTableListFromSmartApi() Error : ".error);
+  } finally {
+    //console.log(useCaseTableList);
+    return useCaseTableList;
+  }
+}
+function checkIfUseCaseTableExists(useCaseTableList, tableNameToCheck) {
+  return useCaseTableList.some(function (el) {
+    return el.name === tableNameToCheck;
+  });
+}
+
+async function createNewTableInUseCaseInSmart(
+  useCaseName,
+  tableName,
+  tableMappings
+) {
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
+  let createNewUseCaseTableInSmartApiResponse = null;
+  try {
+    const smartAuthenticationToken = await getSmartApiAuthenticationToken();
+    if (smartAuthenticationToken) {
+      const existingUseCaseTableList = await getUseCaseTableListFromSmartApi(
+        smartAuthenticationToken,
+        useCaseName
+      );
+      // console.log(existingUseCaseTableList);
+      const useCaseTableExists = checkIfUseCaseTableExists(
+        existingUseCaseTableList,
+        tableName
+      );
+      console.log("useCaseTableExists ", useCaseTableExists);
+      if (!useCaseTableExists) {
+        var data = JSON.stringify({
+          name: tableName,
+          use_case: useCaseName,
+          mappings: {
+            UniqueID: "AssetId",
+            id: "id",
+            firstName: "firstName",
+            lastName: "lastName",
+            email: "email",
+            phoneNumber: "phoneNumber",
+            nin: "nin",
+            TransactionMessage: "TransactionMessage",
+            TransactionUnixTimestamp: "TransactionUnixTimestamp",
+            TransactionIsoTimestamp: "TransactionIsoTimestamp",
+            AssetId: "AssetId",
+          },
+        });
+        const staticToken =
+          "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InJlZ3VsYXJAaXRlYy5hYXUuYXQiLCJjcmVhdGVkX2F0IjoiMjAyMS0xMi0xNSAyMToyODo1Ny45MjE3ODgiLCJ2YWxpZF91bnRpbCI6IjIwMjEtMTItMTYgMjE6Mjg6NTcuOTIxNzg4In0.gp13LARYOduRFHSNk9dKl_9Vtehkg2CXQu_Wiez4ptc";
+        var config = {
+          method: "post",
+          url:
+            appConfigJson["ARTICONF_SMART_API_USECASE_ACCESS_URL"] +
+            "/api/use-cases/" +
+            useCaseName +
+            "/tables",
+          httpsAgent: new https.Agent({
+            rejectUnauthorized: false,
+          }),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + smartAuthenticationToken,
+          },
+          data: tableMappings,
+        };
+        console.log(config);
+        try {
+          const axiosResponse = await axios(config);
+          console.log(createNewUseCaseTableInSmartApiResponse);
+          createNewUseCaseTableInSmartApiResponse = axiosResponse.status;
+        } catch (error) {
+          //console.log(Object.keys(error), error.message);
+          console.log("axios error");
+          createNewUseCaseTableInSmartApiResponse = error.response.status;
+          console.log(error.response.status, error.response.data);
+        }
+      } else {
+        console.log(
+          "Create New Use Case Table: Use case '" +
+            useCaseName +
+            "' Table '" +
+            tableName +
+            "' already exists. So skipping ..."
+        );
+        createNewUseCaseTableInSmartApiResponse = 400;
+      }
+    } else {
+      console.log("Smart Rest Api Authentication retrieval failed");
+    }
+  } catch (error) {
+    console.error("createNewTableInUseCaseInSmart() Error : ".error);
+  } finally {
+    console.log("createNewUseCaseTableInSmartApiResponse");
+    console.log(createNewUseCaseTableInSmartApiResponse);
+    return createNewUseCaseTableInSmartApiResponse;
+  }
+}
+
 async function createNewUseCaseInSmart(useCaseName) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let createNewUseCaseInSmartApiResponse = null;
   try {
     const smartAuthenticationToken = await getSmartApiAuthenticationToken();
@@ -423,7 +610,7 @@ async function getTransactionByTxIdHash(
   txIdHash
 ) {
   let transactionInfo = null;
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   try {
     const authenticationToken = await getHlfExplorerAuthenticationToken(
       networkName
@@ -462,7 +649,7 @@ async function getBlockDetailsbyBlockNumber(
   channelGenesisHash,
   blockNumber
 ) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let blockDetails = null;
   try {
     const authenticationToken = await getHlfExplorerAuthenticationToken(
@@ -498,7 +685,7 @@ async function getBlockDetailsbyBlockNumber(
 }
 
 async function getNetworkList() {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let networkList = null;
   try {
     const axiosRequest = {
@@ -518,7 +705,7 @@ async function getNetworkList() {
   }
 }
 async function getChannels(networkName) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   let channelList = null;
   try {
     const authenticationToken = await getHlfExplorerAuthenticationToken(
@@ -549,7 +736,7 @@ async function getChannels(networkName) {
   }
 }
 async function getChannelStatus(networkName, channelGenesisHash) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   //console.log(channelGenesisHash);
   let channelStatus = null;
   try {
@@ -587,11 +774,16 @@ async function getChannelStatus(networkName, channelGenesisHash) {
   }
 }
 
+function getKeyByValue(object, value) {
+  return Object.keys(object).find((key) => object[key] === value);
+}
+
 async function parseTransactionInfoWritesAndSendToSmartApi(
   transactionId,
   transactionInfo
 ) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
+  updateUseCaseChainCodeConfigJsonGlobalVariableWithLatestChangesFromFile();
   //console.log(transactionInfo);
   for (writes of transactionInfo.write_set) {
     if (writes["chaincode"] !== "lscc") {
@@ -601,10 +793,17 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
       let docType = chainCodeName;
       //console.log(writeSet);
       for (write of writeSet) {
-        //console.log(write);
+        console.log(write);
+        const writeValueKeysArray = Object.keys(JSON.parse(write.value));
+        console.log("writeValueKeysArray = ", writeValueKeysArray);
+        const possibleUniqueKey = getKeyByValue(
+          JSON.parse(write.value),
+          write.key
+        );
+        console.log("possibleUniqueKey = ", possibleUniqueKey);
         if (write.value.length > 0) {
           write.value = JSON.parse(write.value);
-          console.log(typeof write.value);
+          //console.log(typeof(write.value));
           if (typeof write.value !== "number") {
             if ("docType" in write.value) {
               docType = write.value["docType"];
@@ -612,10 +811,6 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
           }
         }
 
-        let smarTApiSpecificData = {
-          ApplicationType: useCaseName,
-          docType: docType,
-        };
         /*let transactionIdInfo = {
           transactionId: transactionId,
           createdt: transactionInfo.createdt,
@@ -635,13 +830,22 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
         console.log(createUseCaseResponse, sendTransactionDataToSmartResponse);*/
 
         let transactionWriteInformationValue = write.value;
-        console.log(transactionWriteInformationValue.length);
+        console.log(
+          "transactionWriteInformationValue.length transactionWriteInformationValue"
+        );
+        console.log(
+          transactionWriteInformationValue.length,
+          transactionWriteInformationValue
+        );
+
         if (transactionWriteInformationValue.length > 0) {
           transactionWriteInformationValue = JSON.parse(
             transactionWriteInformationValue
           );
+          console.log(typeof transactionWriteInformationValue);
         } else {
           // empty string - so no need for JSON.parse;
+          console.log(typeof transactionWriteInformationValue);
         }
 
         // let useCaseName = chainCodeName;
@@ -652,19 +856,70 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
           transactionId: transactionId,
           chainCodeName: chainCodeName,
         };
+
+        console.log(transactionWriteInformationValue);
+
+        updateMapConfigJsonGlobalVariableWithLatestChangesFromFile();
+        if (useCaseName in mapConfigJson) {
+          useCaseName = mapConfigJson[useCaseName];
+        }
+        const createUseCaseResponse = await createNewUseCaseInSmart(
+          useCaseName
+        );
+        let tableMappings;
+        let transactionWriteInformationValueSchema = null;
+        if (
+          typeof transactionWriteInformationValue === "object" &&
+          transactionWriteInformationValue !== null
+        ) {
+          transactionWriteInformationValueSchema = {};
+          for (const key in transactionWriteInformationValue) {
+            transactionWriteInformationValueSchema[key] = String(key);
+          }
+        }
+
+        tableMappings = {
+          name: docType,
+          use_case: useCaseName,
+          mappings: transactionWriteInformationValueSchema,
+        };
+
+        console.log("tableMappings", tableMappings);
+        if (useCaseChainCodeConfigJson == null) {
+          useCaseChainCodeConfigJson = {};
+          useCaseChainCodeConfigJson[chainCodeName] = {};
+          useCaseChainCodeConfigJson[chainCodeName][docType] = tableMappings;
+        } else {
+          useCaseChainCodeConfigJson[chainCodeName] = {};
+          useCaseChainCodeConfigJson[chainCodeName][docType] = tableMappings;
+        }
+
+        fs.writeFileSync(
+          USECASE_CHAINCODE_CONFIG_FILE,
+          JSON.stringify(useCaseChainCodeConfigJson, null, 2)
+        );
+        const createTableInUseCaseResponse = await createNewTableInUseCaseInSmart(
+          useCaseName,
+          docType,
+          JSON.stringify(tableMappings)
+        );
+        let smarTApiSpecificData = {
+          ApplicationType: useCaseName,
+          docType: docType,
+        };
         transactionWriteInformationValue = {
           ...smarTApiSpecificData,
           //...transactionIdInfo,
           ...transactionWriteInformationValue,
         };
-        console.log(transactionWriteInformationValue);
-        const createUseCaseResponse = await createNewUseCaseInSmart(
-          useCaseName
-        );
         const sendTransactionDataToSmartResponse = await sendTransactionDataToSmart(
           transactionWriteInformationValue
         );
-        console.log(createUseCaseResponse, sendTransactionDataToSmartResponse);
+        console.log(
+          createUseCaseResponse,
+          createTableInUseCaseResponse,
+          sendTransactionDataToSmartResponse
+        );
       }
     }
   }
@@ -673,7 +928,7 @@ async function parseTransactionInfoWritesAndSendToSmartApi(
 async function fetchAndSendBlockchainNetworkTransactionsToSmartApi(
   networkName
 ) {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
   const channelList = await getChannels(networkName);
   if (channelList) {
     for (const channel of channelList) {
@@ -745,7 +1000,8 @@ async function fetchAndSendBlockchainNetworkTransactionsToSmartApi(
 }
 
 async function pushDataToSmart() {
-  updateAppConfigJsonGlobalVaiableWithLatestChangesFromFile();
+  updateAppConfigJsonGlobalVariableWithLatestChangesFromFile();
+  updateMapConfigJsonGlobalVariableWithLatestChangesFromFile();
   const networkList = await getNetworkList();
   if (networkList) {
     for (network of networkList) {
@@ -763,9 +1019,60 @@ function delay(ms) {
 async function main() {
   while (true) {
     /* code to wait on goes here (sync or async) */
-    await pushDataToSmart();
-    await delay(5000);
+    try {
+      await pushDataToSmart();
+    } catch (e) {
+      console.log("Error in pushDataToSmart: ", e);
+    } finally {
+      await delay(5000);
+    }
   }
 }
 
 main();
+
+// let transactionData = {
+//   ApplicationType: "mother",
+//   docType: "mother",
+//   id: "+4755555555",
+//   firstName: "Anandhakumar",
+//   lastName: "Palanisamy",
+//   email: "anandhakumarpalanisamy91@gmail.com",
+//   phoneNumber: "+4755555555",
+//   nin: "09069116879",
+//   TransactionMessage: "Created a Mother Record for +4755555555",
+//   TransactionUnixTimestamp: "1637693537",
+//   TransactionIsoTimestamp: "2021-11-23T18:52:17.131Z",
+//   AssetId: "+4755555555",
+// };
+
+// let table = {
+//   mappings: {
+//     AssetId: "AssetId",
+//     TransactionIsoTimestamp: "TransactionIsoTimestamp",
+//     TransactionMessage: "TransactionMessage",
+//     TransactionUnixTimestamp: "TransactionUnixTimestamp",
+//     UniqueID: "AssetId",
+//     email: "email",
+//     firstName: "firstName",
+//     id: "id",
+//     lastName: "lastName",
+//     nin: "nin",
+//     phoneNumber: "phoneNumber",
+//   },
+//   name: "mother",
+//   use_case: "mother",
+// };
+
+// sendTransactionDataToSmart(transactionData).then(function (response) {
+//   console.log("send transaction request response :", response);
+//   getPushedTransactionListFromSmartApi("mother").then(function (response) {
+//     console.log("getPushedTransactionResponse", response);
+//   });
+// });
+
+// createNewTableInUseCaseInSmart("mother", "mother3", "mother").then(function (
+//   response
+// ) {
+//   console.log("createNewTableInUseCaseInSmart response :", response);
+// });
